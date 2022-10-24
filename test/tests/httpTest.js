@@ -157,13 +157,39 @@ describe("Zotero.HTTP", function () {
 						"GET",
 						baseURL + "error",
 						{
-							errorDelayIntervals: [10, 20],
-							errorDelayMax: 25
+							errorDelayIntervals: [10, 20, 100],
+							errorDelayMax: 35
 						}
 					)
 				);
 				assert.instanceOf(e, Zotero.HTTP.UnexpectedStatusException);
-				assert.isTrue(spy.calledTwice);
+				assert.isTrue(spy.calledThrice);
+				assert.isTrue(delayStub.calledTwice);
+				assert.equal(delayStub.args[0][0], 10);
+				assert.equal(delayStub.args[1][0], 20);
+			});
+			
+			it("shouldn't retry on 500 error if errorDelayMax=0", async function () {
+				setResponse({
+					method: "GET",
+					url: "error",
+					status: 500,
+					text: ""
+				});
+				spy = sinon.spy(Zotero.HTTP, "_requestInternal");
+				var e = await getPromiseError(
+					Zotero.HTTP.request(
+						"GET",
+						baseURL + "error",
+						{
+							errorDelayIntervals: [10, 20, 100],
+							errorDelayMax: 0
+						}
+					)
+				);
+				assert.instanceOf(e, Zotero.HTTP.UnexpectedStatusException);
+				assert.isTrue(spy.calledOnce);
+				assert.isTrue(delayStub.notCalled);
 			});
 			
 			it("should provide cancellerReceiver a callback to cancel while waiting to retry a 5xx error", async function () {
@@ -178,13 +204,13 @@ describe("Zotero.HTTP", function () {
 				spy = sinon.spy(Zotero.HTTP, "_requestInternal");
 				setTimeout(() => {
 					cancel();
-				}, 80);
+				}, 300);
 				var e = await getPromiseError(
 					Zotero.HTTP.request(
 						"GET",
 						baseURL + "error",
 						{
-							errorDelayIntervals: [10, 10, 150],
+							errorDelayIntervals: [10, 10, 600],
 							cancellerReceiver: function () {
 								cancel = arguments[0];
 							}
@@ -301,6 +327,18 @@ describe("Zotero.HTTP", function () {
 				);
 			});
 			assert.isTrue(called);
+		});
+		
+		it("should fail on non-2xx response", async function () {
+			var e = await getPromiseError(new Zotero.Promise((resolve, reject) => {
+				Zotero.HTTP.loadDocuments(
+					baseURL + "nonexistent",
+					() => {},
+					resolve,
+					reject
+				);
+			}));
+			assert.instanceOf(e, Zotero.HTTP.UnexpectedStatusException);
 		});
 	});
 });

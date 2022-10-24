@@ -37,6 +37,7 @@
 <!--EDIT MENU-->
 <!ENTITY copyCitationCmd.label "Copy Citation">
 <!ENTITY copyBibliographyCmd.label "Copy Bibliography">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Switch Page Direction">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,8 +45,12 @@
 <!ENTITY bidiSwitchTextDirectionItem.accesskey "w">
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
+<!--GO MENU-->
+<!ENTITY goMenu.label "Go">
+
 <!--VIEW MENU-->
 <!ENTITY viewMenu.label                 "View">
+<!ENTITY viewMenu.accesskey             "V">
 <!ENTITY layout.label                   "Layout">
 <!ENTITY standardView.label             "Standard View">
 <!ENTITY stackedView.label              "Stacked View">

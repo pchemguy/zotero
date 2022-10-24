@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Отказ на всички">
 <!ENTITY zotero.general.edit "Редактиране">
 <!ENTITY zotero.general.delete "Изтриване">
+<!ENTITY zotero.general.moveToTrash "Премества в кошчето за боклук">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Отказ">
 <!ENTITY zotero.general.refresh "Опресняване">
@@ -20,7 +21,7 @@
 <!ENTITY zotero.general.other "Други...">
 <!ENTITY zotero.general.bigger "Bigger">
 <!ENTITY zotero.general.smaller "Smaller">
-<!ENTITY zotero.general.reset "Reset">
+<!ENTITY zotero.general.reset "Нулиране">
 
 
 <!ENTITY zotero.errorReport.title "Зотеро доклад за проблем">
@@ -49,42 +50,15 @@
 <!ENTITY zotero.tabs.attachments.label "Прикачени файлове">
 <!ENTITY zotero.tabs.tags.label "Маркери">
 <!ENTITY zotero.tabs.related.label "Свързани">
-<!ENTITY zotero.notes.separate "Редактиране в отделен прозорец">
 
 <!ENTITY zotero.toolbar.duplicate.label "Показване на дупликатите">
 <!ENTITY zotero.collections.showUnfiledItems "Показване на непопълнените записи">
 <!ENTITY zotero.collections.showRetractedItems "Show Retracted Items">
 
 <!ENTITY zotero.items.itemType "Вид запис">
-<!ENTITY zotero.items.type_column "Вид запис">
-<!ENTITY zotero.items.title_column "Заглавие">
 <!ENTITY zotero.items.creator_column "Създател">
-<!ENTITY zotero.items.date_column "Дата">
 <!ENTITY zotero.items.year_column "Година">
-<!ENTITY zotero.items.publisher_column "Издател">
-<!ENTITY zotero.items.publication_column "Публикация">
-<!ENTITY zotero.items.journalAbbr_column "Списание (съкратено)">
-<!ENTITY zotero.items.language_column "Език">
-<!ENTITY zotero.items.accessDate_column "Отворен на">
-<!ENTITY zotero.items.libraryCatalog_column "Библиотечен каталог">
-<!ENTITY zotero.items.callNumber_column "Номер на обаждане">
-<!ENTITY zotero.items.rights_column "Права">
-<!ENTITY zotero.items.dateAdded_column "Добавен на">
 <!ENTITY zotero.items.dateModified_column "Променен на">
-<!ENTITY zotero.items.extra_column "Допълнително">
-<!ENTITY zotero.items.archive_column "Архив">
-<!ENTITY zotero.items.archiveLocation_column "Място в архива">
-<!ENTITY zotero.items.place_column "Място">
-<!ENTITY zotero.items.volume_column "Том">
-<!ENTITY zotero.items.edition_column "Издание">
-<!ENTITY zotero.items.pages_column "Страници">
-<!ENTITY zotero.items.issue_column "Пореден номер">
-<!ENTITY zotero.items.series_column "Серия">
-<!ENTITY zotero.items.seriesTitle_column "Название на серията">
-<!ENTITY zotero.items.court_column "Съдебна зала">
-<!ENTITY zotero.items.medium_column "Носител/Формат">
-<!ENTITY zotero.items.genre_column "Жанр">
-<!ENTITY zotero.items.system_column "Система">
 <!ENTITY zotero.items.moreColumns.label "Повече колони">
 <!ENTITY zotero.items.restoreColumnOrder.label "Възстановяване на подредбата на колоните">
 
@@ -99,7 +73,6 @@
 <!ENTITY zotero.items.menu.duplicateItem "Удвояване на избраните записи">
 <!ENTITY zotero.items.menu.mergeItems "Сливане на записите...">
 <!ENTITY zotero.items.menu.unrecognize "Отменяне на извличането на данни">
-<!ENTITY zotero.items.menu.reportMetadata "Докладване за неправилни извлечени данни">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Изберете версията на записа, която да използвате като главен запис">
 <!ENTITY zotero.duplicatesMerge.fieldSelect "Изберете полета за запазване от другите версии на записа">
@@ -120,7 +93,7 @@
 <!ENTITY zotero.toolbar.import.label "Внасяне...">
 <!ENTITY zotero.toolbar.importFromClipboard "Внасяне от клипборда">
 <!ENTITY zotero.toolbar.export.label "Изнасяне на библиотека...">
-<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
+<!ENTITY zotero.toolbar.rtfScan.label "Сканиране на RTF">
 <!ENTITY zotero.toolbar.timeline.label "Създаване на хронология">
 <!ENTITY zotero.toolbar.preferences.label "Предпочитания...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "Подръжка и документация">
@@ -155,6 +128,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Запазване на копие от файл">
 <!ENTITY zotero.toolbar.attachment.weblink "Запазване на връзка към настоящата страница">
 <!ENTITY zotero.toolbar.attachment.snapshot "Направи &quot;моментна снимка&quot; на настоящата страница">
+<!ENTITY zotero.toolbar.context.item "Елемент">
+<!ENTITY zotero.toolbar.context.notes "Notes">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Няма маркери, които да бъдат показани">
 <!ENTITY zotero.tagSelector.loadingTags "Зареждане на маркери...">
@@ -172,8 +147,11 @@
 <!ENTITY zotero.tagColorChooser.setColor "Задаване на цвят">
 <!ENTITY zotero.tagColorChooser.removeColor "Премахване на цвят">
 
-<!ENTITY zotero.lookup.description "Въведете ISBN, DOI, PMID, или arXiv идентификатори за добавяне към Вашата библиотека:">
+<!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, arXiv IDs, or ADS Bibcodes to add to your library:">
 <!ENTITY zotero.lookup.button.search "Търсене">
+
+<!ENTITY zotero.createParent.title "Create Parent Item">
+<!ENTITY zotero.createParent.button.manual "Manual Entry">
 
 <!ENTITY zotero.selectitems.title "Избране на записи">
 <!ENTITY zotero.selectitems.intro.label "Изберете кои записи искате да добавите към Вашата библиотека">
@@ -207,7 +185,7 @@
 <!ENTITY zotero.import.lastModified "Променено за последно">
 <!ENTITY zotero.import.size "Размер">
 <!ENTITY zotero.import.createCollection "Поместване на внесените колекции и записи в нова колекция">
-<!ENTITY zotero.import.fileHandling "File Handling">
+<!ENTITY zotero.import.fileHandling "Обработка на файловете">
 
 <!ENTITY zotero.exportOptions.title "Изнасяне...">
 <!ENTITY zotero.exportOptions.format.label "Формат:">
@@ -218,7 +196,7 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Запазване на подредбата на източниците">
 
-<!ENTITY zotero.citation.suppressAuthor.label "Скриване на автора">
+<!ENTITY zotero.citation.suppressAuthor.label "Omit Author">
 <!ENTITY zotero.citation.prefix.label "Представка:">
 <!ENTITY zotero.citation.suffix.label "Надставка:">
 <!ENTITY zotero.citation.editorWarning.label "Внимание: Ако промените цитиране / бележка под линия в редактора, тя повече няма да се актуализира и да отразява промените, които са направени в базата данни и в стила на цитиране.">
@@ -322,3 +300,32 @@
 <!ENTITY zotero.attachLink.title "Прикачване на линк към URI">
 <!ENTITY zotero.attachLink.label.link "Линк:">
 <!ENTITY zotero.attachLink.label.title "Заглавие:">
+
+<!ENTITY zotero.context.addChildNote "Add Item Note">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Add Item Note from Annotations">
+<!ENTITY zotero.context.addStandaloneNote "Add Standalone Note">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Add Standalone Note from Annotations">
+<!ENTITY zotero.context.editInWindow "Edit in a Separate Window">
+
+<!ENTITY zotero.pdfReader.firstPage "Първа страница">
+<!ENTITY zotero.pdfReader.lastPage "Last Page">
+<!ENTITY zotero.pdfReader.back "Back">
+<!ENTITY zotero.pdfReader.forward "Forward">
+<!ENTITY zotero.pdfReader.handTool "Hand Tool">
+<!ENTITY zotero.pdfReader.verticalScrolling "Vertical Scrolling">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Horizontal Scrolling">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Wrapped Scrolling">
+<!ENTITY zotero.pdfReader.noSpreads "No Spreads">
+<!ENTITY zotero.pdfReader.oddSpreads "Odd Spreads">
+<!ENTITY zotero.pdfReader.evenSpreads "Even Spreads">
+<!ENTITY zotero.pdfReader.zoomIn "Zoom In">
+<!ENTITY zotero.pdfReader.zoomOut "Zoom Out">
+<!ENTITY zotero.pdfReader.zoomAuto "Automatically Resize">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Zoom to Page Width">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Zoom to Page Height">
+<!ENTITY zotero.pdfReader.splitVertically "Split Vertically">
+<!ENTITY zotero.pdfReader.splitHorizontally "Split Horizontally">
+<!ENTITY zotero.pdfReader.transferFromPDF "Import Annotations…">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Rotate Page Left">
+<!ENTITY zotero.pdfReader.rotatePageRight "Rotate Page Right">
+<!ENTITY zotero.pdfReader.rotatePage180 "Rotate Page 180°">

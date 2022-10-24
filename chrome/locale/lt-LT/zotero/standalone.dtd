@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "Kopijuoti citatą">
 <!ENTITY copyBibliographyCmd.label "Kopijuoti bibliografiją">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Keisti puslapio kryptį">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "p">
@@ -44,7 +45,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY goMenu.label "Go">
+
+
 <!ENTITY viewMenu.label "Rodymas">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Išdėstymas">
 <!ENTITY standardView.label "Įprastas rodymas">
 <!ENTITY stackedView.label "Straipsnio informacija apačioje">
@@ -61,7 +66,7 @@
 <!ENTITY installConnector.label "Įdiegti papildinį naršyklei">
 <!ENTITY installConnector.accesskey "C">
 <!ENTITY addons.label "Priedai">
-<!ENTITY developer.label "Progarmuotojams">
+<!ENTITY developer.label "Programuotojams">
 
 
 <!ENTITY minimizeWindow.key "r">
@@ -85,7 +90,7 @@
 <!ENTITY helpTroubleshootingInfo.label "Informacija nesklandumų šalinimui">
 <!ENTITY helpTroubleshootingInfo.accesskey "I">
 <!ENTITY helpFeedbackPage.label "Diskusijų forumai">
-<!ENTITY helpFeedbackPage.accesskey "F">
+<!ENTITY helpFeedbackPage.accesskey "I">
 
 <!ENTITY helpReportErrors.label "Pranešti apie klaidas...">
 <!ENTITY helpReportErrors.accesskey "r">

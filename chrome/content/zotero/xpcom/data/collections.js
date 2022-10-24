@@ -40,6 +40,8 @@ Zotero.Collections = function() {
 		version: "O.version",
 		synced: "O.synced",
 		
+		deleted: "DC.collectionID IS NOT NULL AS deleted",
+		
 		parentID: "O.parentCollectionID AS parentID",
 		parentKey: "CP.key AS parentKey",
 		
@@ -51,7 +53,8 @@ Zotero.Collections = function() {
 	
 		
 	this._primaryDataSQLFrom = "FROM collections O "
-			+ "LEFT JOIN collections CP ON (O.parentCollectionID=CP.collectionID)";
+			+ "LEFT JOIN deletedCollections DC ON (O.collectionID=DC.collectionID)"
+			+ "LEFT JOIN collections CP ON (O.parentCollectionID=CP.collectionID) ";
 	
 	this._relationsTable = "collectionRelations";
 	
@@ -151,81 +154,6 @@ Zotero.Collections = function() {
 		});
 		
 	}
-	
-	
-	/**
-	 * Sort an array of collectionIDs from top-level to deepest
-	 *
-	 * Order within each level is undefined.
-	 *
-	 * This is used to sort higher-level collections first in upload JSON, since otherwise the API
-	 * would reject lower-level collections for having missing parents.
-	 */
-	this.sortByLevel = function (ids) {
-		let levels = {};
-		
-		// Get objects from ids
-		let objs = {};
-		ids.forEach(id => objs[id] = Zotero.Collections.get(id));
-		
-		// Get top-level collections
-		let top = ids.filter(id => !objs[id].parentID);
-		levels["0"] = top.slice();
-		ids = Zotero.Utilities.arrayDiff(ids, top);
-		
-		// For each collection in list, walk up its parent tree. If a parent is present in the
-		// list of ids, add it to the appropriate level bucket and remove it.
-		while (ids.length) {
-			let tree = [ids[0]];
-			let keep = [ids[0]];
-			let id = ids.shift();
-			let seen = new Set([id]);
-			while (true) {
-				let c = Zotero.Collections.get(id);
-				let parentID = c.parentID;
-				if (!parentID) {
-					break;
-				}
-				// Avoid an infinite loop if collections are incorrectly nested within each other
-				if (seen.has(parentID)) {
-					throw new Zotero.Error(
-						"Incorrectly nested collections",
-						Zotero.Error.ERROR_INVALID_COLLECTION_NESTING,
-						{
-							collectionID: id
-						}
-					);
-				}
-				seen.add(parentID);
-				tree.push(parentID);
-				// If parent is in list, remove it
-				let pos = ids.indexOf(parentID);
-				if (pos != -1) {
-					keep.push(parentID);
-					ids.splice(pos, 1);
-				}
-				id = parentID;
-			}
-			let level = tree.length - 1;
-			for (let i = 0; i < tree.length; i++) {
-				let currentLevel = level - i;
-				for (let j = 0; j < keep.length; j++) {
-					if (tree[i] != keep[j]) continue;
-					
-					if (!levels[currentLevel]) {
-						levels[currentLevel] = [];
-					}
-					levels[currentLevel].push(keep[j]);
-				}
-			}
-		}
-		
-		var orderedIDs = [];
-		for (let level in levels) {
-			orderedIDs = orderedIDs.concat(levels[level]);
-		}
-		return orderedIDs;
-	};
 	
 	
 	this._loadChildCollections = Zotero.Promise.coroutine(function* (libraryID, ids, idSQL) {

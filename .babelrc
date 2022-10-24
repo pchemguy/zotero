@@ -7,6 +7,8 @@
   "ignore": [
     "chrome/content/zotero/include.js",
     "chrome/content/zotero/xpcom/citeproc.js",
+    "chrome/content/ace/*",
+    "chrome/content/scaffold/templates/*",
     "resource/react.js",
     "resource/react-dom.js",
     "resource/react-virtualized.js",
@@ -15,6 +17,8 @@
   "plugins": [
     "@babel/plugin-proposal-class-properties",
     "@babel/plugin-proposal-object-rest-spread",
+    "@babel/plugin-proposal-optional-chaining",
+    "@babel/plugin-proposal-unicode-property-regex",
     [
       "transform-es2015-modules-commonjs",
       {

@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "Eilañ an arroudenn">
 <!ENTITY copyBibliographyCmd.label "Eilañ al levrlennadur">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Eilpennañ tuadur ar bajenn">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,7 +45,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY goMenu.label "Mont">
+
+
 <!ENTITY viewMenu.label "Gwel">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Aozadur">
 <!ENTITY standardView.label "Mod-gwelet standard">
 <!ENTITY stackedView.label "Mod-gwelet berniet">

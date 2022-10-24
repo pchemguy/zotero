@@ -141,7 +141,7 @@ describe("Zotero.DataObject", function() {
 				var obj = createUnsavedDataObject(type);
 				var id = yield obj.saveTx();
 				
-				obj.synced = 1;
+				obj.synced = true;
 				yield obj.saveTx();
 				
 				if (type == 'item') {
@@ -159,6 +159,35 @@ describe("Zotero.DataObject", function() {
 			}
 		});
 	})
+	
+	
+	describe("#deleted", function () {
+		it("should set trash status", async function () {
+			for (let type of types) {
+				let plural = Zotero.DataObjectUtilities.getObjectTypePlural(type)
+				let pluralClass = Zotero[Zotero.Utilities.capitalize(plural)];
+				
+				// Set to true
+				var obj = await createDataObject(type);
+				assert.isFalse(obj.deleted, type);
+				obj.deleted = true;
+				// Sanity check for itemsTest#trash()
+				if (type == 'item') {
+					assert.isTrue(obj._changedData.deleted, type);
+				}
+				await obj.saveTx();
+				var id = obj.id;
+				await pluralClass.reload(id, false, true);
+				assert.isTrue(obj.deleted, type);
+				
+				// Set to false
+				obj.deleted = false;
+				await obj.saveTx();
+				await pluralClass.reload(id, false, true);
+				assert.isFalse(obj.deleted, type);
+			}
+		});
+	});
 	
 	describe("#loadPrimaryData()", function () {
 		it("should load unloaded primary data if partially set", function* () {
@@ -181,7 +210,16 @@ describe("Zotero.DataObject", function() {
 				yield obj.loadPrimaryData();
 				assert.equal(obj.version, objs[type].version);
 			}
-		})
+		});
+		
+		it("shouldn't overwrite item type set in constructor", async function () {
+			var item = new Zotero.Item('book');
+			item.libraryID = Zotero.Libraries.userLibraryID;
+			item.key = Zotero.DataObjectUtilities.generateKey();
+			await item.loadPrimaryData();
+			var saved = await item.saveTx();
+			assert.ok(saved);
+		});
 	})
 	
 	describe("#loadAllData()", function () {
@@ -196,14 +234,14 @@ describe("Zotero.DataObject", function() {
 			var item = new Zotero.Item('attachment');
 			var id = yield item.saveTx();
 			yield item.loadAllData();
-			assert.equal(item.getNote(), '');
+			assert.equal(item.note, '');
 		})
 		
 		it("should load data on a note item", function* () {
 			var item = new Zotero.Item('note');
 			var id = yield item.saveTx();
 			yield item.loadAllData();
-			assert.equal(item.getNote(), '');
+			assert.equal(item.note, '');
 		})
 	})
 	
@@ -305,7 +343,7 @@ describe("Zotero.DataObject", function() {
 				let item = createUnsavedDataObject('item', { libraryID: group.libraryID });
 				var e = yield getPromiseError(item.saveTx());
 				assert.ok(e);
-				assert.include(e.message, "read-only");
+				assert.include(e.message, "Cannot edit item");
 			});
 			
 			it("should allow saving if skipEditCheck is passed", function* () {
@@ -322,14 +360,6 @@ describe("Zotero.DataObject", function() {
 					skipAll: true
 				}));
 				assert.isFalse(e);
-			});
-		});
-		
-		describe("Options", function () {
-			describe("#skipAll", function () {
-				it("should include edit check", function* () {
-					
-				});
 			});
 		});
 	})
@@ -535,6 +565,19 @@ describe("Zotero.DataObject", function() {
 				assert.equal(linkedItem.id, item2.id);
 			})
 			
+			it("shouldn't return a linked item in the trash in another library", async function () {
+				var group = await getGroup();
+				var item1 = await createDataObject('item');
+				var item2 = await createDataObject('item', { libraryID: group.libraryID });
+				var item2URI = Zotero.URI.getItemURI(item2);
+				
+				await item2.addLinkedItem(item1);
+				item2.deleted = true;
+				await item2.saveTx();
+				var linkedItem = await item1.getLinkedItem(item2.libraryID);
+				assert.isFalse(linkedItem);
+			})
+			
 			it("shouldn't return reverse linked objects by default", function* () {
 				var group = yield getGroup();
 				var item1 = yield createDataObject('item');
@@ -574,5 +617,79 @@ describe("Zotero.DataObject", function() {
 				assert.equal(item1.getField('dateModified'), dateModified);
 			})
 		})
-	})
+	});
+	
+	describe("#fromJSON()", function () {
+		it("should remove object from trash if 'deleted' property not provided", async function () {
+			for (let type of types) {
+				let obj = await createDataObject(type, { deleted: true });
+				
+				assert.isTrue(obj.deleted, type);
+				
+				let json = obj.toJSON();
+				delete json.deleted;
+				
+				obj.fromJSON(json);
+				await obj.saveTx();
+				
+				assert.isFalse(obj.deleted, type);
+			}
+		});
+	});
+	
+	describe("#toJSON()", function () {
+		it("should output 'deleted' as true", function () {
+			for (let type of types) {
+				let obj = createUnsavedDataObject(type);
+				obj.deleted = true;
+				let json = obj.toJSON();
+				assert.isTrue(json.deleted, type);
+			}
+		});
+		
+		it("shouldn't include 'deleted' if not set in default mode", function () {
+			for (let type of types) {
+				let obj = createUnsavedDataObject(type);
+				let json = obj.toJSON();
+				assert.notProperty(json, 'deleted', type);
+			}
+		});
+		
+		describe("'patch' mode", function () {
+			it("should include changed 'deleted' field", async function () {
+				for (let type of types) {
+					let plural = Zotero.DataObjectUtilities.getObjectTypePlural(type)
+					let pluralClass = Zotero[Zotero.Utilities.capitalize(plural)];
+					
+					// True to false
+					let obj = createUnsavedDataObject(type)
+					obj.deleted = true;
+					let id = await obj.saveTx();
+					obj = await pluralClass.getAsync(id);
+					let patchBase = obj.toJSON();
+					
+					obj.deleted = false;
+					let json = obj.toJSON({
+						patchBase: patchBase
+					})
+					assert.isUndefined(json.title, type);
+					assert.isFalse(json.deleted, type);
+					
+					// False to true
+					obj = createUnsavedDataObject(type);
+					obj.deleted = false;
+					id = await obj.saveTx();
+					obj = await pluralClass.getAsync(id);
+					patchBase = obj.toJSON();
+					
+					obj.deleted = true;
+					json = obj.toJSON({
+						patchBase: patchBase
+					})
+					assert.isUndefined(json.title, type);
+					assert.isTrue(json.deleted, type);
+				}
+			});
+		});
+	});
 })

@@ -24,7 +24,7 @@
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
 <!ENTITY manageAttachments.label "添付ファイルを管理">
-<!ENTITY convertToStored.label "Convert Linked Files to Stored Files…">
+<!ENTITY convertToStored.label "リンクファイルを保存ファイルに変換...">
 <!ENTITY importCmd.label "インポート...">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "クリップボードからインポート">
@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "出典表記をコピー">
 <!ENTITY copyBibliographyCmd.label "参考文献目録をコピー">
+<!ENTITY copyNoteCmd.label "メモをコピー">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "ページの方向を切り替える">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,7 +45,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY goMenu.label "移動">
+
+
 <!ENTITY viewMenu.label "表示">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "レイアウト">
 <!ENTITY standardView.label "標準ビュー">
 <!ENTITY stackedView.label "積み上げビュー">

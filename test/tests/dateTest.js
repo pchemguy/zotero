@@ -143,6 +143,12 @@ describe("Zotero.Date", function() {
 			var date = "2016-02-27 22:00:00";
 			date = Zotero.Date.sqlToDate(date, true);
 			assert.equal(date.getTime(), 1456610400000);
+		});
+		
+		it("should convert an SQL UTC date without seconds into a JS Date object", function () {
+			var date = "2016-02-27 22:00";
+			date = Zotero.Date.sqlToDate(date, true);
+			assert.equal(date.getTime(), 1456610400000);
 		})
 	})
 	
@@ -151,12 +157,20 @@ describe("Zotero.Date", function() {
 			assert.ok(Zotero.Date.isISODate("2015"));
 			assert.ok(Zotero.Date.isISODate("2015-04"));
 			assert.ok(Zotero.Date.isISODate("2015-04-29"));
+			assert.ok(Zotero.Date.isISODate("2015-04-29T17:28"));
 			assert.ok(Zotero.Date.isISODate("2015-04-29T17:28Z"));
 			assert.isFalse(Zotero.Date.isISODate("2015-04-29 17:28"));
 		})
 	})
 	
 	describe("#strToDate()", function () {
+		beforeEach(function () {
+			if (Zotero.locale != 'en-US') {
+				Zotero.locale = 'en-US';
+				Zotero.Date.init();
+			}
+		});
+		
 		it("should return object without date parts for null", function () {
 			var o = Zotero.Date.strToDate(null);
 			assert.notProperty(o, 'year');
@@ -182,15 +196,51 @@ describe("Zotero.Date", function() {
 			assert.notProperty(o, 'year');
 		});
 		
+		it("should parse English month before date", function () {
+			var o = Zotero.Date.strToDate("June 26, 2010");
+			assert.equal(o.month, 5);
+			assert.equal(o.day, 26);
+			assert.equal(o.year, 2010);
+		});
+		
+		it("should parse English month after date", function () {
+			var o = Zotero.Date.strToDate("26 June 2010");
+			assert.equal(o.month, 5);
+			assert.equal(o.day, 26);
+			assert.equal(o.year, 2010);
+		});
+		
+		it("should parse Chinese month", function () {
+			Zotero.locale = 'zh-CN';
+			Zotero.Date.init();
+			var o = Zotero.Date.strToDate(
+				String.fromCharCode(0x56DB) + String.fromCharCode(0x6708) + " 26, 2010"
+			);
+			assert.equal(o.month, 3);
+			assert.equal(o.day, 26);
+			assert.equal(o.year, 2010);
+		});
+		
 		it("should parse two- and three-digit dates with leading zeros", function () {
-			var o = Zotero.Date.strToDate('0068');
-			assert.equal(o.year, 68);
+			var o;
 			
-			o = Zotero.Date.strToDate('068');
-			assert.equal(o.year, 68);
+			o = Zotero.Date.strToDate('001');
+			assert.equal(o.year, 1);
 			
-			o = Zotero.Date.strToDate('0168');
-			assert.equal(o.year, 168);
+			o = Zotero.Date.strToDate('0001');
+			assert.equal(o.year, 1);
+			
+			o = Zotero.Date.strToDate('012');
+			assert.equal(o.year, 12);
+			
+			o = Zotero.Date.strToDate('0012');
+			assert.equal(o.year, 12);
+			
+			o = Zotero.Date.strToDate('0123');
+			assert.equal(o.year, 123);
+			
+			o = Zotero.Date.strToDate('01/01/08');
+			assert.equal(o.year, 2008);
 		});
 		
 		it("should parse two-digit year greater than current year as previous century", function () {
@@ -203,10 +253,25 @@ describe("Zotero.Date", function() {
 			assert.equal(o.year, 2019);
 		});
 		
+		it("should parse one-digit month and four-digit year", function () {
+			var o = Zotero.Date.strToDate('8/2020');
+			assert.equal(o.month, 7);
+			assert.isUndefined(o.day);
+			assert.equal(o.year, 2020);
+		});
+		
+		it("should parse two-digit month with leading zero and four-digit year", function () {
+			var o = Zotero.Date.strToDate('08/2020');
+			assert.equal(o.month, 7);
+			assert.isUndefined(o.day);
+			assert.equal(o.year, 2020);
+		});
+		
 		it("should parse string with just month number", function () {
 			var o = Zotero.Date.strToDate('1');
 			assert.equal(o.month, 0);
 			assert.isUndefined(o.year);
+			assert.equal(o.order, 'm');
 		});
 		
 		it("should parse string with just day number", function () {
@@ -214,6 +279,7 @@ describe("Zotero.Date", function() {
 			assert.equal(o.day, 25);
 			assert.isUndefined(o.month);
 			assert.isUndefined(o.year);
+			assert.equal(o.order, 'd');
 		});
 		
 		it("should work in translator sandbox", function* () {

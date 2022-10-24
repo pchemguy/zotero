@@ -31,8 +31,7 @@ Zotero.Collection = function(params = {}) {
 	this._childCollections = new Set();
 	this._childItems = new Set();
 	
-	Zotero.Utilities.assignProps(this, params, ['name', 'libraryID', 'parentID',
-		'parentKey', 'lastSync']);
+	Zotero.Utilities.Internal.assignProps(this, params, ['name', 'libraryID', 'parentID', 'parentKey']);
 }
 
 Zotero.extendClass(Zotero.DataObject, Zotero.Collection);
@@ -153,6 +152,7 @@ Zotero.Collection.prototype.loadFromRow = function(row) {
 		
 		// Boolean
 		case 'synced':
+		case 'deleted':
 		case 'hasChildCollections':
 		case 'hasChildItems':
 			val = !!val;
@@ -174,9 +174,15 @@ Zotero.Collection.prototype.loadFromRow = function(row) {
 }
 
 
-Zotero.Collection.prototype.hasChildCollections = function() {
+Zotero.Collection.prototype.hasChildCollections = function (includeTrashed) {
 	this._requireData('childCollections');
-	return this._childCollections.size > 0;
+	if (!this._childCollections.size) {
+		return false;
+	}
+	if (includeTrashed) {
+		return this._childCollections.size > 0;
+	}
+	return !this.getChildCollections().every(c => c.deleted);
 }
 
 Zotero.Collection.prototype.hasChildItems = function() {
@@ -196,7 +202,7 @@ Zotero.Collection.prototype.getChildCollections = function (asIDs) {
 	
 	// Return collectionIDs
 	if (asIDs) {
-		return this._childCollections.values();
+		return [...this._childCollections.values()];
 	}
 	
 	// Return Zotero.Collection objects
@@ -328,6 +334,19 @@ Zotero.Collection.prototype._saveData = Zotero.Promise.coroutine(function* (env)
 			}.bind(this));
 		}
 	}
+	
+	if (this._changedData.deleted !== undefined) {
+		if (this._changedData.deleted) {
+			sql = "REPLACE INTO deletedCollections (collectionID) VALUES (?)";
+		}
+		else {
+			sql = "DELETE FROM deletedCollections WHERE collectionID=?";
+		}
+		yield Zotero.DB.queryAsync(sql, collectionID);
+		
+		this._clearChanged('deleted');
+		this._markForReload('primaryData');
+	}
 });
 
 Zotero.Collection.prototype._finalizeSave = Zotero.Promise.coroutine(function* (env) {
@@ -413,8 +432,8 @@ Zotero.Collection.prototype.addItems = Zotero.Promise.coroutine(function* (itemI
  *
  * @return {Promise}
  */
-Zotero.Collection.prototype.removeItem = function (itemID) {
-	return this.removeItems([itemID]);
+Zotero.Collection.prototype.removeItem = function (itemID, options = {}) {
+	return this.removeItems([itemID], options);
 }
 
 
@@ -424,7 +443,7 @@ Zotero.Collection.prototype.removeItem = function (itemID) {
  *
  * Does not require a separate save()
  */
-Zotero.Collection.prototype.removeItems = Zotero.Promise.coroutine(function* (itemIDs) {
+Zotero.Collection.prototype.removeItems = Zotero.Promise.coroutine(function* (itemIDs, options = {}) {
 	if (!itemIDs || !itemIDs.length) {
 		return;
 	}
@@ -443,7 +462,8 @@ Zotero.Collection.prototype.removeItems = Zotero.Promise.coroutine(function* (it
 		let item = yield this.ChildObjects.getAsync(itemID);
 		item.removeFromCollection(this.id);
 		yield item.save({
-			skipDateModifiedUpdate: true
+			skipDateModifiedUpdate: true,
+			skipEditCheck: options.skipEditCheck
 		})
 	}
 });
@@ -587,6 +607,11 @@ Zotero.Collection.prototype._eraseData = Zotero.Promise.coroutine(function* (env
 					libraryID: c.libraryID,
 					key: c.key
 				};
+				// skipDeleteLog is normally added to notifierData in DataObject::_finalizeErase(),
+				// so we have to do it manually here
+				if (env.options && env.options.skipDeleteLog) {
+					env.notifierData[c.id].skipDeleteLog = true;
+				}
 			}
 		}
 		// Descendent items
@@ -708,6 +733,7 @@ Zotero.Collection.prototype.fromJSON = function (json, options = {}) {
 			case 'name':
 			case 'parentCollection':
 			case 'relations':
+			case 'deleted':
 				break;
 			
 			default:
@@ -725,6 +751,10 @@ Zotero.Collection.prototype.fromJSON = function (json, options = {}) {
 	this.parentKey = json.parentCollection ? json.parentCollection : false;
 	
 	this.setRelations(json.relations || {});
+	
+	if (json.deleted || this.deleted) {
+		this.deleted = !!json.deleted;
+	}
 }
 
 

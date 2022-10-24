@@ -5,6 +5,12 @@
   "general_done": {
     "message": "Klaar"
   },
+  "general_yes": {
+    "message": "Ja"
+  },
+  "general_no": {
+    "message": "Nee"
+  },
   "general_tryAgain": {
     "message": "Opnieuw proberen"
   },
@@ -13,6 +19,12 @@
   },
   "general_cancel": {
     "message": "Annuleren"
+  },
+  "general_pleaseWait": {
+    "message": "Wachten a.u.b."
+  },
+  "general_copyToClipboard": {
+    "message": "Kopieer naar klembord"
   },
   "progressWindow_savingTo": {
     "message": "Opslaan in"
@@ -49,6 +61,9 @@
   },
   "integration_googleDocs_unlinkBeforeSaving_downloadAnyway": {
     "message": "Gelinkte versie toch downloaden"
+  },
+  "integration_googleDocs_updating": {
+    "message": "1$1 is uw document aan het bijwerken."
   },
   "general_saveTo": {
     "message": "Opslaan in $1"

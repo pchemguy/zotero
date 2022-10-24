@@ -25,9 +25,9 @@
 <!ENTITY closeCmd.accesskey "L">
 <!ENTITY manageAttachments.label "Manage Attachments">
 <!ENTITY convertToStored.label "Convert Linked Files to Stored Files…">
-<!ENTITY importCmd.label "Import…">
+<!ENTITY importCmd.label "Importer …">
 <!ENTITY importCmd.key "I">
-<!ENTITY importFromClipboardCmd.label "Import from Clipboard">
+<!ENTITY importFromClipboardCmd.label "Importer frå utklippstavla">
 <!ENTITY quitApplicationCmdWin.label "Avslutt">
 <!ENTITY quitApplicationCmdWin.accesskey "A">
 <!ENTITY quitApplicationCmd.label "Avslutt">
@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "Kopier sitering">
 <!ENTITY copyBibliographyCmd.label "Kopier bibliografi">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Byt sideretning">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,7 +45,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY goMenu.label "Go">
+
+
 <!ENTITY viewMenu.label "View">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Layout">
 <!ENTITY standardView.label "Standard View">
 <!ENTITY stackedView.label "Stacked View">
@@ -59,7 +64,7 @@
 <!ENTITY toolsMenu.label "Verktøy">
 <!ENTITY toolsMenu.accesskey "V">
 <!ENTITY installConnector.label "Install Browser Connector">
-<!ENTITY installConnector.accesskey "C">
+<!ENTITY installConnector.accesskey "K">
 <!ENTITY addons.label "Tillegg">
 <!ENTITY developer.label "Developer">
 
@@ -87,7 +92,7 @@
 <!ENTITY helpFeedbackPage.label "Discussion Forums">
 <!ENTITY helpFeedbackPage.accesskey "F">
 
-<!ENTITY helpReportErrors.label "Report Errors…">
+<!ENTITY helpReportErrors.label "Meld frå om feil …">
 <!ENTITY helpReportErrors.accesskey "M">
 
 <!ENTITY debugOutputLogging.label "Debug Output Logging">

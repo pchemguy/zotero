@@ -9,12 +9,12 @@
 	height: 1.5em;
 }
 
-*[zoteroFontSize=large] treechildren::-moz-tree-row
+*[zoteroFontSize=large] treechildren::-moz-tree-row, *[zoteroFontSize=x-large] treechildren::-moz-tree-row
 {
 	height: 1.5em;
 }
 
-*[zoteroFontSize=large] .treecol-text
+*[zoteroFontSize=large] .treecol-text, *[zoteroFontSize=x-large] .treecol-text
 {
 	margin:0;
 	padding:0;
@@ -130,13 +130,34 @@ label.zotero-text-link {
 	text-decoration: underline;
 	border: 1px solid transparent;
 	cursor: pointer;
+}
+
+.text-link {
+	-moz-user-focus: normal;
 	color: -moz-nativehyperlinktext;
+	text-decoration: underline;
+	border: 1px solid transparent;
+	cursor: pointer;
 }
 
 .zotero-clicky
 {	
 	border-radius: 6px;
 	border: 1px solid transparent;
+}
+
+.zotero-focusable {
+	-moz-user-focus: normal;
+}
+
+/* This isn't quite the right color (at least for Win11), but we can fix in fx102 */
+.zotero-focusable:focus {
+	outline: 1px dotted darkgray;
+}
+
+/* Don't show focus ring for clicky on hover, since we already show a background */
+.zotero-clicky.zotero-focusable:focus:hover {
+	outline: none;
 }
 
 /* Minus and plus buttons with clicky glow effect */
@@ -293,7 +314,7 @@ label.zotero-text-link {
 	padding: 3px;
 }
 
-#zotero-advanced-search-dialog #zotero-items-tree
+#zotero-advanced-search-dialog .virtualized-table-container
 {
 	min-height: 250px;
 }
@@ -301,6 +322,11 @@ label.zotero-text-link {
 #zotero-advanced-search-dialog #zotero-search-buttons
 {
 	margin: 3px 0;
+}
+
+/* Constrain 2x collection/search icons */
+zoterosearch .menulist-icon {
+	height: 16px;
 }
 
 #zotero-attach-uri-container
@@ -326,6 +352,16 @@ label.zotero-text-link {
 
 #zotero-feed-settings grid hbox:first-child {
 	-moz-box-pack: end;
+}
+
+#zotero-feed-settings .html-input {
+	width: 50px;
+	text-align: right;
+}
+
+#zotero-feed-settings #advanced-options-togglable hbox {
+	display: flex;
+	align-items: center;
 }
 
 .zotero-spinner-14 {

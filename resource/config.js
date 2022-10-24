@@ -3,6 +3,8 @@ var ZOTERO_CONFIG = {
 	ID: 'zotero', // used for db filename, etc.
 	CLIENT_NAME: 'Zotero',
 	DOMAIN_NAME: 'zotero.org',
+	PRODUCER: 'Digital Scholar',
+	PRODUCER_URL: 'https://digitalscholar.org',
 	REPOSITORY_URL: 'https://repo.zotero.org/repo/',
 	BASE_URI: 'http://zotero.org/',
 	WWW_BASE_URL: 'https://www.zotero.org/',
@@ -19,9 +21,15 @@ var ZOTERO_CONFIG = {
 	QUICK_START_URL: "https://www.zotero.org/support/quick_start_guide",
 	PDF_TOOLS_URL: "https://www.zotero.org/download/xpdf/",
 	SUPPORT_URL: "https://www.zotero.org/support/",
+	SYNC_INFO_URL: "https://www.zotero.org/support/sync",
 	TROUBLESHOOTING_URL: "https://www.zotero.org/support/getting_help",
 	FEEDBACK_URL: "https://forums.zotero.org/",
-	CONNECTORS_URL: "https://www.zotero.org/download/connectors"
+	CONNECTORS_URL: "https://www.zotero.org/download/connectors",
+	CHANGELOG_URL: "https://www.zotero.org/support/changelog",
+	CREDITS_URL: 'https://www.zotero.org/support/credits_and_acknowledgments',
+	LICENSING_URL: 'https://www.zotero.org/support/licensing',
+	GET_INVOLVED_URL: 'https://www.zotero.org/getinvolved',
+	DICTIONARIES_URL: 'https://download.zotero.org/dictionaries/',
 };
 
 if (typeof process === 'object' && process + '' === '[object process]'){

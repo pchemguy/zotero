@@ -10,11 +10,13 @@ describe("Zotero_File_Interface", function() {
         win.close();
     });
 
-    it('should import a file into a collection', function* () {
+    it('should import all types and fields into a new collection', async function () {
         this.timeout(10000);
         let testFile = getTestDataDirectory();
         testFile.append("allTypesAndFields.js");
-        yield win.Zotero_File_Interface.importFile(testFile);
+        await win.Zotero_File_Interface.importFile({
+        	file: testFile
+        });
 
         let importedCollection = Zotero.Collections.getByLibrary(
 			Zotero.Libraries.userLibraryID
@@ -38,8 +40,26 @@ describe("Zotero_File_Interface", function() {
             delete trueItem.key;
             delete trueItem.collections;
         }
-        assert.deepEqual(savedItems, trueItems, "saved items match inputs")
+        assert.deepEqual(savedItems, trueItems, "saved items match inputs");
     });
+    
+    
+    it("should import RIS into selected collection", async function () {
+    	var collection = await createDataObject('collection');
+    	
+        var testFile = OS.Path.join(getTestDataDirectory().path, 'book_and_child_note.ris');
+        await win.Zotero_File_Interface.importFile({
+        	file: testFile,
+        	createNewCollection: false
+        });
+        
+        var items = collection.getChildItems();
+        assert.lengthOf(items, 1);
+        var childNotes = items[0].getNotes();
+        assert.lengthOf(childNotes, 1);
+        assert.equal(Zotero.Items.get(childNotes[0]).getNote(), '<p>Child</p>');
+    });
+    
     
 	it('should import an item and snapshot from Zotero RDF', function* () {
 		var tmpDir = yield getTempDirectory();
@@ -53,10 +73,12 @@ describe("Zotero_File_Interface", function() {
 		);
 		
 		var promise = waitForItemEvent('add');
-		Zotero.debug(yield Zotero.File.getContentsAsync(rdfFile));
-		yield win.Zotero_File_Interface.importFile(Zotero.File.pathToFile(rdfFile))
+		yield win.Zotero_File_Interface.importFile({
+			file: rdfFile
+		});
 		var ids = yield promise;
-		assert.lengthOf(ids, 1);
+		// Notifications are batched
+		assert.lengthOf(ids, 2);
 		
 		// Check book
 		var item = Zotero.Items.get(ids[0]);
@@ -78,7 +100,9 @@ describe("Zotero_File_Interface", function() {
 		var modsFile = OS.Path.join(getTestDataDirectory().path, "mods.xml");
 		
 		var promise = waitForItemEvent('add');
-		yield win.Zotero_File_Interface.importFile(Zotero.File.pathToFile(modsFile));
+		yield win.Zotero_File_Interface.importFile({
+			file: modsFile
+		});
 		var ids = yield promise;
 		assert.lengthOf(ids, 1);
 		
@@ -191,6 +215,74 @@ describe("Zotero_File_Interface", function() {
 			assert.include(str, 'line-height');
 			assert.include(str, '<i>A</i>');
 			assert.include(str, '<i>B</i>');
+		});
+	});
+
+	describe('Citavi annotations', () => {
+		it('should import Citavi', async () => {
+			var testFile = OS.Path.join(getTestDataDirectory().path, 'citavi-test-project.ctv6');
+			
+			const promise = waitForItemEvent('add');
+			await win.Zotero_File_Interface.importFile({
+				file: testFile,
+				createNewCollection: false
+			});
+			
+			const itemIDs = await promise;
+			const importedItem = await Zotero.Items.getAsync(itemIDs[0]);
+			assert.equal(importedItem.getField('title'), 'Bitcoin: A Peer-to-Peer Electronic Cash System');
+			const importedPDF = await Zotero.Items.getAsync(importedItem.getAttachments()[0]);
+			const annotations = importedPDF.getAnnotations();
+			assert.lengthOf(annotations, 5);
+
+			const annotation1 = annotations.find(a => a.annotationText === 'peer-to-peer');
+			const annotation2 = annotations.find(a => a.annotationText === 'CPU power is controlled by nodes that are not cooperating to attack the network, they\'ll generate the longest chain and outpace attackers.');
+			const annotation3 = annotations.find(a => a.annotationText === 'double-spending');
+			const annotation4 = annotations.find(a => a.annotationText === 'This is a comment');
+			const annotation5 = annotations.find(a => a.annotationText === 'This is a green highlight on page 3');
+
+			assert.deepEqual(
+				JSON.parse(annotation1.annotationPosition),
+				{ pageIndex: 0, rects: [[230.202, 578.879, 275.478, 585.817], [230.202, 578.879, 275.478, 585.817]] }
+			);
+
+			assert.deepEqual(
+				JSON.parse(annotation2.annotationPosition),
+				{ pageIndex: 0, rects: [[228.335, 475.341, 461.756, 482.179], [146.3, 463.841, 437.511, 470.679], [146.3, 463.841, 461.756, 482.179]] },
+			);
+
+			assert.deepEqual(
+				JSON.parse(annotation3.annotationPosition),
+				{ pageIndex: 0, rects: [[254.515, 532.841, 316.462, 539.679], [254.515, 532.841, 316.462, 539.679]] },
+			);
+
+			assert.deepEqual(
+				JSON.parse(annotation4.annotationPosition),
+				{ pageIndex: 0, rects: [[146.3, 429.341, 199.495, 436.179], [146.3, 429.341, 199.495, 436.179]] }
+			);
+
+			assert.deepEqual(
+				JSON.parse(annotation5.annotationPosition),
+				{ pageIndex: 2, rects: [[133.3, 330.924, 185.269, 340.294], [133.3, 330.924, 185.269, 340.294]] }
+			);
+
+			assert.equal(annotation1.annotationSortIndex, '00000|000103|00206');
+			assert.equal(annotation2.annotationSortIndex, '00000|000723|00309');
+			assert.equal(annotation3.annotationSortIndex, '00000|000390|00252');
+			assert.equal(annotation4.annotationSortIndex, '00000|000981|00355');
+			assert.equal(annotation5.annotationSortIndex, '00002|001638|00451');
+
+			assert.deepEqual(annotation1.getTags(), [{ tag: 'red' }]);
+			assert.deepEqual(annotation2.getTags(), [{ tag: 'blue' }]);
+			assert.deepEqual(annotation3.getTags(), []);
+			assert.deepEqual(annotation4.getTags(), [{ tag: 'comment' }]);
+			assert.deepEqual(annotation5.getTags(), []);
+
+			assert.equal(annotation1.annotationPageLabel, '1');
+			assert.equal(annotation2.annotationPageLabel, '1');
+			assert.equal(annotation3.annotationPageLabel, '1');
+			assert.equal(annotation4.annotationPageLabel, '1');
+			assert.equal(annotation5.annotationPageLabel, '3');
 		});
 	});
 });

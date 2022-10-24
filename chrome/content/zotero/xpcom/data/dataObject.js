@@ -49,6 +49,7 @@ Zotero.DataObject = function () {
 	this._identified = false;
 	this._parentID = null;
 	this._parentKey = null;
+	this._deleted = null;
 	
 	this._relations = [];
 	
@@ -97,6 +98,33 @@ Zotero.defineProperty(Zotero.DataObject.prototype, 'parentID', {
 Zotero.defineProperty(Zotero.DataObject.prototype, '_canHaveParent', {
 	value: true
 });
+
+// Define boolean properties
+for (let name of ['deleted']) {
+	let prop = '_' + name;
+	Zotero.defineProperty(Zotero.DataObject.prototype, name, {
+			get: function() {
+				if (!this.id) {
+					return false;
+				}
+				var val = this._getLatestField(name);
+				if (this[prop] !== null) {
+					return this[prop];
+				}
+				this._requireData('primaryData');
+			},
+			set: function(val) {
+				val = !!val;
+				var oldVal = this._getLatestField(name);
+				if (oldVal == val) {
+					Zotero.debug(Zotero.Utilities.capitalize(name)
+						+ ` state hasn't changed for ${this._objectType} ${this.id}`);
+					return;
+				}
+				this._markFieldChange(name, val);
+			}
+	});
+}
 
 Zotero.defineProperty(Zotero.DataObject.prototype, 'ObjectsClass', {
 	get: function() { return this._ObjectsClass; }
@@ -488,6 +516,10 @@ Zotero.DataObject.prototype._getLinkedObject = Zotero.Promise.coroutine(function
 					+ "in Zotero." + this._ObjectType + "::getLinked" + this._ObjectType + "()", 2);
 				continue;
 			}
+			// Ignore items in the trash
+			if (obj.objectType == 'item' && obj.deleted) {
+				continue;
+			}
 			return obj;
 		}
 	}
@@ -495,7 +527,7 @@ Zotero.DataObject.prototype._getLinkedObject = Zotero.Promise.coroutine(function
 	// Then try relations with this as an object
 	if (bidirectional) {
 		var thisURI = Zotero.URI['get' + this._ObjectType + 'URI'](this);
-		var objects = Zotero.Relations.getByPredicateAndObject(
+		let objects = yield Zotero.Relations.getByPredicateAndObject(
 			this._objectType, predicate, thisURI
 		);
 		for (let i = 0; i < objects.length; i++) {
@@ -506,6 +538,10 @@ Zotero.DataObject.prototype._getLinkedObject = Zotero.Promise.coroutine(function
 				continue;
 			}
 			if (obj.libraryID == libraryID) {
+				// Ignore items in the trash
+				if (obj.objectType == 'item' && obj.deleted) {
+					continue;
+				}
 				return obj;
 			}
 		}
@@ -611,7 +647,6 @@ Zotero.DataObject.prototype.loadPrimaryData = Zotero.Promise.coroutine(function*
 			throw new Error(this._ObjectType + " " + (id ? id : libraryID + "/" + key)
 				+ " not found in Zotero." + this._ObjectType + ".loadPrimaryData()");
 		}
-		this._clearChanged('primaryData');
 		
 		// If object doesn't exist, mark all data types as loaded
 		this._markAllDataTypeLoadStates(true);
@@ -707,19 +742,44 @@ Zotero.DataObject.prototype._markAllDataTypeLoadStates = function (loaded) {
 	}
 }
 
+Zotero.DataObject.prototype._hasFieldChanged = function (field) {
+	return field in this._changedData;
+};
+
+Zotero.DataObject.prototype._getChangedField = function (field) {
+	return this._changedData[field];
+};
+
+/**
+ * Get either the unsaved value of a field or the saved value if unchanged since the last save
+ */
+Zotero.DataObject.prototype._getLatestField = function (field) {
+	return this._changedData[field] !== undefined ? this._changedData[field] : this['_' + field];
+};
+
+/**
+ * Get either the unsaved value of a field or the saved value if unchanged since the last save
+ */
+Zotero.DataObject.prototype._getLatestField = function (field) {
+	return this._changedData[field] !== undefined ? this._changedData[field] : this['_' + field];
+};
+
 /**
  * Save old version of data that's being changed, to pass to the notifier
  * @param {String} field
- * @param {} oldValue
+ * @param {} value - Old value for old-style 'changed' fields, and new value for 'changedData' fields
  */
-Zotero.DataObject.prototype._markFieldChange = function (field, oldValue) {
+Zotero.DataObject.prototype._markFieldChange = function (field, value) {
 	// New method (changedData)
-	if (field == 'tags') {
-		if (Array.isArray(oldValue)) {
-			this._changedData[field] = [...oldValue];
+	if (['deleted', 'tags'].includes(field) || field.startsWith('annotation')) {
+		if (Array.isArray(value)) {
+			this._changedData[field] = [...value];
+		}
+		else if (typeof value === 'object' && value !== null) {
+			this._changedData[field] = Object.assign({}, value);
 		}
 		else {
-			this._changedData[field] = oldValue;
+			this._changedData[field] = value;
 		}
 		return;
 	}
@@ -728,21 +788,19 @@ Zotero.DataObject.prototype._markFieldChange = function (field, oldValue) {
 	if (!this.id || this._previousData[field] !== undefined) {
 		return;
 	}
-	if (Array.isArray(oldValue)) {
+	if (Array.isArray(value)) {
 		this._previousData[field] = [];
-		Object.assign(this._previousData[field], oldValue)
+		Object.assign(this._previousData[field], value)
 	}
 	else {
-		this._previousData[field] = oldValue;
+		this._previousData[field] = value;
 	}
 }
 
 
 Zotero.DataObject.prototype.hasChanged = function() {
 	var changed = Object.keys(this._changed).filter(dataType => this._changed[dataType])
-		.concat(
-			Object.keys(this._changedData).filter(dataType => this._changedData[dataType])
-		);
+		.concat(Object.keys(this._changedData));
 	if (changed.length == 1
 			&& changed[0] == 'primaryData'
 			&& Object.keys(this._changed.primaryData).length == 1
@@ -792,27 +850,17 @@ Zotero.DataObject.prototype._markForReload = function (dataType) {
 }
 
 
-Zotero.DataObject.prototype.isEditable = function () {
-	return Zotero.Libraries.get(this.libraryID).editable;
-}
-
-
-Zotero.DataObject.prototype.editCheck = function () {
+/**
+ * @param {String} [op='edit'] - Operation to check; if not provided, check edit privileges for
+ *     library
+ */
+Zotero.DataObject.prototype.isEditable = function (_op = 'edit') {
 	let library = Zotero.Libraries.get(this.libraryID);
-	if ((this._objectType == 'collection' || this._objectType == 'search')
-			&& library.libraryType == 'publications') {
-		throw new Error(this._ObjectTypePlural + " cannot be added to My Publications");
-	}
-	
 	if (library.libraryType == 'feed') {
-		return;
+		return true;
 	}
-	
-	if (!this.isEditable()) {
-		throw new Error("Cannot edit " + this._objectType + " in read-only library "
-			+ Zotero.Libraries.get(this.libraryID).name);
-	}
-}
+	return library.editable;
+};
 
 /**
  * Save changes to database
@@ -868,12 +916,18 @@ Zotero.DataObject.prototype.save = Zotero.Promise.coroutine(function* (options =
 		}
 		
 		env.notifierData = {};
-		// Pass along any 'notifierData' values
+		// Pass along any 'notifierData' values, which become 'extraData' in notifier events
 		if (env.options.notifierData) {
 			Object.assign(env.notifierData, env.options.notifierData);
 		}
 		if (env.options.skipSelect) {
 			env.notifierData.skipSelect = true;
+		}
+		// Pass along event-level notifier options, which become top-level extraData properties
+		for (let option of Zotero.Notifier.EVENT_LEVEL_OPTIONS) {
+			if (env.options[option] !== undefined) {
+				env.notifierData[option] = env.options[option];
+			}
 		}
 		if (!env.isNew) {
 			env.changed = this._previousData;
@@ -934,7 +988,10 @@ Zotero.DataObject.prototype._initSave = Zotero.Promise.coroutine(function* (env)
 	env.isNew = !this.id;
 	
 	if (!env.options.skipEditCheck) {
-		this.editCheck();
+		if (!this.isEditable()) {
+			throw new Error("Cannot edit " + this._objectType + " in library "
+				+ Zotero.Libraries.get(this.libraryID).name);
+		}
 	}
 	
 	let targetLib = Zotero.Libraries.get(this.libraryID);
@@ -1003,6 +1060,13 @@ Zotero.DataObject.prototype._saveData = function (env) {
 		env.sqlColumns.push('clientDateModified');
 		env.sqlValues.push(Zotero.DB.transactionDateTime);
 	}
+	
+	if (!env.options.skipNotifier && this._changedData.deleted !== undefined) {
+		Zotero.Notifier.queue('refresh', 'trash', this.libraryID, {}, env.options.notifierQueue);
+		if (!env.isNew && this._changedData.deleted) {
+			Zotero.Notifier.queue('trash', this._objectType, this.id, {}, env.options.notifierQueue);
+		}
+	}
 };
 
 Zotero.DataObject.prototype._finalizeSave = Zotero.Promise.coroutine(function* (env) {
@@ -1031,10 +1095,16 @@ Zotero.DataObject.prototype._finalizeSave = Zotero.Promise.coroutine(function* (
 				toAdd[i][0] = yield Zotero.RelationPredicates.add(toAdd[i][0]);
 				env.relationsToRegister.push([toAdd[i][0], toAdd[i][1]]);
 			}
-			yield Zotero.DB.queryAsync(
-				sql + toAdd.map(x => "(?, ?, ?)").join(", "),
-				toAdd.map(x => [this.id, x[0], x[1]])
-				.reduce((x, y) => x.concat(y))
+			yield Zotero.Utilities.Internal.forEachChunkAsync(
+				toAdd,
+				Math.floor(Zotero.DB.MAX_BOUND_PARAMETERS / 3),
+				async function (chunk) {
+					await Zotero.DB.queryAsync(
+						sql + chunk.map(x => "(?, ?, ?)").join(", "),
+						chunk.map(x => [this.id, x[0], x[1]])
+							.reduce((x, y) => x.concat(y))
+					);
+				}.bind(this)
 			);
 		}
 		
@@ -1216,10 +1286,11 @@ Zotero.DataObject.prototype._initErase = Zotero.Promise.method(function (env) {
 		key: this.key
 	};
 	
-	if (!env.options.skipEditCheck) this.editCheck();
-	
-	if (env.options.skipDeleteLog) {
-		env.notifierData[this.id].skipDeleteLog = true;
+	if (!env.options.skipEditCheck) {
+		if (!this.isEditable('erase')) {
+			throw new Error(`Cannot erase ${this._objectType} in library `
+				+ Zotero.Libraries.get(this.libraryID).name);
+		}
 	}
 	
 	return true;
@@ -1236,6 +1307,10 @@ Zotero.DataObject.prototype._finalizeErase = Zotero.Promise.coroutine(function* 
 	Zotero.DB.addCurrentCallback("commit", function () {
 		this.ObjectsClass.unload(env.deletedObjectIDs || this.id);
 	}.bind(this));
+	
+	if (env.options.skipDeleteLog) {
+		env.notifierData[this.id].skipDeleteLog = true;
+	}
 	
 	if (!env.options.skipNotifier) {
 		Zotero.Notifier.queue(
@@ -1286,6 +1361,11 @@ Zotero.DataObject.prototype._preToJSON = function (options) {
 }
 
 Zotero.DataObject.prototype._postToJSON = function (env) {
+	var deleted = this._getLatestField('deleted');
+	if (deleted || env.options.mode == 'full') {
+		env.obj.deleted = !!deleted;
+	}
+	
 	if (env.mode == 'patch') {
 		env.obj = Zotero.DataObjectUtilities.patch(env.options.patchBase, env.obj);
 	}

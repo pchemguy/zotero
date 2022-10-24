@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "인용 복사">
 <!ENTITY copyBibliographyCmd.label "서지 복사">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "페이지 방향 바꾸기">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,7 +45,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY goMenu.label "Go">
+
+
 <!ENTITY viewMenu.label "보기">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "레이아웃">
 <!ENTITY standardView.label "표준 보기">
 <!ENTITY stackedView.label "포개어 보기">

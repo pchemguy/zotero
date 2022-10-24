@@ -48,13 +48,7 @@ describe("Zotero.Schema", function() {
 		});
 		
 		describe("#migrateExtraFields()", function () {
-			it("should add a new field and migrate values from Extra", async function () {
-				var item = await createDataObject('item', { itemType: 'book' });
-				item.setField('numPages', "10");
-				item.setField('extra', 'Foo Bar: This is a value.\nnumber-of-pages: 11\nThis is another line.');
-				item.synced = true;
-				await item.saveTx();
-				
+			async function migrate() {
 				schema.version++;
 				schema.itemTypes.find(x => x.itemType == 'book').fields.splice(0, 1, { field: 'fooBar' })
 				var newLocales = {};
@@ -65,6 +59,16 @@ describe("Zotero.Schema", function() {
 				});
 				await Zotero.Schema._updateGlobalSchemaForTest(schema);
 				await Zotero.Schema.migrateExtraFields();
+			}
+			
+			it("should add a new field and migrate values from Extra", async function () {
+				var item = await createDataObject('item', { itemType: 'book' });
+				item.setField('numPages', "10");
+				item.setField('extra', 'Foo Bar: This is a value.\nnumber-of-pages: 11\nThis is another line.');
+				item.synced = true;
+				await item.saveTx();
+				
+				await migrate();
 				
 				assert.isNumber(Zotero.ItemFields.getID('fooBar'));
 				assert.equal(Zotero.ItemFields.getLocalizedString('fooBar'), 'Foo Bar');
@@ -89,16 +93,7 @@ describe("Zotero.Schema", function() {
 				item.synced = true;
 				await item.saveTx();
 				
-				schema.version++;
-				schema.itemTypes.find(x => x.itemType == 'book').fields.splice(0, 1, { field: 'fooBar' })
-				var newLocales = {};
-				Object.keys(schema.locales).forEach((locale) => {
-					var o = schema.locales[locale];
-					o.fields.fooBar = 'Foo Bar';
-					newLocales[locale] = o;
-				});
-				await Zotero.Schema._updateGlobalSchemaForTest(schema);
-				await Zotero.Schema.migrateExtraFields();
+				await migrate();
 				
 				var creators = item.getCreators();
 				assert.lengthOf(creators, 2);
@@ -126,16 +121,7 @@ describe("Zotero.Schema", function() {
 				item.synced = true;
 				await item.saveTx();
 				
-				schema.version++;
-				schema.itemTypes.find(x => x.itemType == 'book').fields.splice(0, 1, { field: 'fooBar' })
-				var newLocales = {};
-				Object.keys(schema.locales).forEach((locale) => {
-					var o = schema.locales[locale];
-					o.fields.fooBar = 'Foo Bar';
-					newLocales[locale] = o;
-				});
-				await Zotero.Schema._updateGlobalSchemaForTest(schema);
-				await Zotero.Schema.migrateExtraFields();
+				await migrate();
 				
 				var creators = item.getCreators();
 				assert.lengthOf(creators, 1);
@@ -155,21 +141,67 @@ describe("Zotero.Schema", function() {
 					skipEditCheck: true
 				});
 				
-				schema.version++;
-				schema.itemTypes.find(x => x.itemType == 'book').fields.splice(0, 1, { field: 'fooBar' })
-				var newLocales = {};
-				Object.keys(schema.locales).forEach((locale) => {
-					var o = schema.locales[locale];
-					o.fields.fooBar = 'Foo Bar';
-					newLocales[locale] = o;
-				});
-				await Zotero.Schema._updateGlobalSchemaForTest(schema);
-				await Zotero.Schema.migrateExtraFields();
+				await migrate();
 				
 				assert.isNumber(Zotero.ItemFields.getID('fooBar'));
 				assert.equal(item.getField('fooBar'), '');
 				assert.equal(item.getField('extra'), 'Foo Bar: This is a value.');
 				assert.isTrue(item.synced);
+			});
+			
+			it("should change item type if 'type:' is defined", async function () {
+				var item = await createDataObject('item', { itemType: 'document' });
+				item.setField('extra', 'type: personal_communication');
+				item.synced = true;
+				await item.saveTx();
+				
+				await migrate();
+				
+				assert.equal(item.itemTypeID, Zotero.ItemTypes.getID('letter'));
+				assert.equal(item.getField('extra'), '');
+				assert.isFalse(item.synced);
+			});
+			
+			it("should remove 'type:' line for CSL type if item is the first mapped Zotero type", async function () {
+				var item = await createDataObject('item', { itemType: 'letter' });
+				item.setField('extra', 'type: personal_communication');
+				item.synced = true;
+				await item.saveTx();
+				
+				await migrate();
+				
+				assert.equal(item.itemTypeID, Zotero.ItemTypes.getID('letter'));
+				assert.equal(item.getField('extra'), '');
+				assert.isFalse(item.synced);
+			});
+			
+			it("should remove 'type:' line for CSL type if item is a non-primary mapped Zotero type", async function () {
+				var item = await createDataObject('item', { itemType: 'instantMessage' });
+				item.setField('extra', 'type: personal_communication');
+				item.synced = true;
+				await item.saveTx();
+				
+				await migrate();
+				
+				assert.equal(item.itemTypeID, Zotero.ItemTypes.getID('instantMessage'));
+				assert.equal(item.getField('extra'), '');
+				assert.isFalse(item.synced);
+			});
+			
+			it("should move existing fields that would be invalid in the new 'type:' type to Extra", async function () {
+				var item = await createDataObject('item', { itemType: 'book' });
+				item.setField('numPages', '123');
+				item.setField('extra', 'type: article-journal\nJournal Abbreviation: abc.\nnumPages: 234');
+				item.synced = true;
+				await item.saveTx();
+				
+				await migrate();
+				
+				assert.equal(item.itemTypeID, Zotero.ItemTypes.getID('journalArticle'));
+				assert.equal(item.getField('journalAbbreviation'), 'abc.');
+				// Migrated real field should be placed at beginning, followed by unused line from Extra
+				assert.equal(item.getField('extra'), 'Num Pages: 123\nnumPages: 234');
+				assert.isFalse(item.synced);
 			});
 			
 			it("shouldn't migrate invalid item type", async function () {
@@ -195,16 +227,7 @@ describe("Zotero.Schema", function() {
 				item.synced = true;
 				await item.saveTx();
 				
-				schema.version++;
-				schema.itemTypes.find(x => x.itemType == 'book').fields.splice(0, 1, { field: 'fooBar' })
-				var newLocales = {};
-				Object.keys(schema.locales).forEach((locale) => {
-					var o = schema.locales[locale];
-					o.fields.fooBar = 'Foo Bar';
-					newLocales[locale] = o;
-				});
-				await Zotero.Schema._updateGlobalSchemaForTest(schema);
-				await Zotero.Schema.migrateExtraFields();
+				await migrate();
 				
 				assert.equal(item.getField('numPages'), 30);
 				var creators = item.getCreators();
@@ -217,6 +240,164 @@ describe("Zotero.Schema", function() {
 	});
 	
 	
+	describe("Repository Check", function () {
+		describe("Notices", function () {
+			var win;
+			var server;
+			
+			before(async function () {
+				// We need bundled files
+				await resetDB({
+					thisArg: this
+				});
+				
+				win = await loadZoteroPane();
+			});
+			
+			beforeEach(function () {
+				Zotero.HTTP.mock = sinon.FakeXMLHttpRequest;
+				server = sinon.fakeServer.create();
+				server.autoRespond = true;
+			});
+			
+			afterEach(function () {
+				Zotero.Prefs.clear('hiddenNotices');
+			});
+			
+			after(function () {
+				win.close();
+				Zotero.HTTP.mock = null;
+			});
+			
+			function createResponseWithMessage(message) {
+				server.respond(function (req) {
+					if (req.method != "POST" || !req.url.includes('/repo/updated')) {
+						return;
+					}
+					req.respond(
+						200,
+						{
+							"Content-Type": "application/xml"
+						},
+						'<xml>'
+							+ '<currentTime>1630219842</currentTime>'
+							+ message
+							+ '</xml>'
+					);
+				});
+			}
+			
+			it("should show dialog if repo returns a message", async function () {
+				createResponseWithMessage(
+					`<message infoURL="https://example.com">This is a warning</message>`
+				);
+				
+				var promise = waitForDialog(function (dialog) {
+					var html = dialog.document.documentElement.outerHTML;
+					assert.include(html, "This is a warning");
+				});
+				await Zotero.Schema.updateFromRepository(3);
+				await promise;
+				
+				// Don't show id-less message again for a day
+				var spy = sinon.spy(Zotero, 'debug');
+				await Zotero.Schema.updateFromRepository(3);
+				assert.notEqual(spy.args.findIndex(x => {
+					return typeof x[0] == 'string' && x[0].startsWith("Not showing hidden");
+				}), -1);
+				spy.restore();
+			});
+			
+			it("shouldn't show message with id again for 1 day even if not hidden", async function () {
+				var id = Zotero.Utilities.randomString();
+				createResponseWithMessage(
+					`<message id="${id}" infoURL="https://example.com">This is a warning</message>`
+				);
+				
+				var promise = waitForDialog();
+				await Zotero.Schema.updateFromRepository(3);
+				await promise;
+				
+				// Make sure notice is hidden for 1 day
+				var hiddenNotices;
+				var tries = 0;
+				var ttl = 86400;
+				while (tries < 100) {
+					tries++;
+					hiddenNotices = Zotero.Prefs.get('hiddenNotices');
+					if (!hiddenNotices) {
+						await Zotero.Promise.delay(10);
+						continue;
+					}
+					hiddenNotices = JSON.parse(hiddenNotices);
+					assert.property(hiddenNotices, id);
+					assert.approximately(hiddenNotices[id], Math.round(Date.now() / 1000) + ttl, 10);
+					break;
+				}
+			});
+			
+			it("shouldn't show message with id again for 30 days", async function () {
+				var id = Zotero.Utilities.randomString();
+				createResponseWithMessage(
+					`<message id="${id}" infoURL="https://example.com">This is a warning</message>`
+				);
+				
+				var promise = waitForDialog(function (dialog) {
+					var doc = dialog.document;
+					var innerHTML = doc.documentElement.innerHTML;
+					assert.include(innerHTML, "This is a warning");
+					assert.include(innerHTML, Zotero.getString('general.dontShowAgainFor', 30, 30));
+					// Check "Don't show again"
+					doc.getElementById('checkbox').click();
+				});
+				await Zotero.Schema.updateFromRepository(3);
+				await promise;
+				
+				// Make sure notice is hidden for 30 days
+				var hiddenNotices;
+				var tries = 0;
+				var ttl = 30 * 86400;
+				while (tries < 100) {
+					tries++;
+					hiddenNotices = Zotero.Prefs.get('hiddenNotices');
+					if (!hiddenNotices) {
+						await Zotero.Promise.delay(10);
+						continue;
+					}
+					hiddenNotices = JSON.parse(hiddenNotices);
+					assert.property(hiddenNotices, id);
+					assert.approximately(hiddenNotices[id], Math.round(Date.now() / 1000) + ttl, 10);
+					break;
+				}
+			});
+			
+			it("shouldn't show message with id if before expiration", async function () {
+				var id = Zotero.Utilities.randomString();
+				createResponseWithMessage(
+					`<message id="${id}" infoURL="https://example.com">This is a warning</message>`
+				);
+				
+				// Set expiration for 30 days from now
+				var ttl = 30 * 86400;
+				Zotero.Prefs.set(
+					'hiddenNotices',
+					JSON.stringify({
+						[id]: Math.round(Date.now() / 1000) + ttl
+					})
+				);
+				
+				// Message should be hidden
+				var spy = sinon.spy(Zotero, 'debug');
+				await Zotero.Schema.updateFromRepository(3);
+				assert.notEqual(spy.args.findIndex(x => {
+					return typeof x[0] == 'string' && x[0].startsWith("Not showing hidden");
+				}), -1);
+				spy.restore();
+			});
+		});
+	});
+	
+	
 	describe("#integrityCheck()", function () {
 		before(function* () {
 			yield resetDB({
@@ -224,6 +405,16 @@ describe("Zotero.Schema", function() {
 				skipBundledFiles: true
 			});
 		})
+		
+		it("should create missing tables unless 'skipReconcile' is true", async function () {
+			await Zotero.DB.queryAsync("DROP TABLE retractedItems");
+			assert.isFalse(await Zotero.DB.tableExists('retractedItems'));
+			assert.isTrue(await Zotero.Schema.integrityCheck(false, { skipReconcile: true }));
+			
+			assert.isFalse(await Zotero.Schema.integrityCheck());
+			assert.isTrue(await Zotero.Schema.integrityCheck(true));
+			assert.isTrue(await Zotero.DB.tableExists('retractedItems'));
+		});
 		
 		it("should repair a foreign key violation", function* () {
 			yield assert.eventually.isTrue(Zotero.Schema.integrityCheck());
@@ -263,5 +454,31 @@ describe("Zotero.Schema", function() {
 			await assert.isTrue(await Zotero.Schema.integrityCheck(true));
 			await assert.isTrue(await Zotero.Schema.integrityCheck());
 		});
+		
+		it("should allow embedded-image attachments under notes", async function () {
+			var item = await createDataObject('item', { itemType: 'note' });
+			await createEmbeddedImage(item);
+			await assert.isTrue(await Zotero.Schema.integrityCheck());
+		});
 	})
+	
+	describe("Database Upgrades", function () {
+		after(async function () {
+			await resetDB({
+				thisArg: this,
+				skipBundledFiles: true,
+			});
+		});
+		
+		it("should upgrade 4.0 database", async function () {
+			await resetDB({
+				thisArg: this,
+				skipBundledFiles: true,
+				dbFile: OS.Path.join(getTestDataDirectory().path, 'zotero-4.0.sqlite.zip')
+			});
+			// Make sure we can open the Zotero pane without errors
+			win = await loadZoteroPane();
+			win.close();
+		});
+	});
 })

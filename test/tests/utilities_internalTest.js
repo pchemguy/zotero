@@ -59,6 +59,34 @@ describe("Zotero.Utilities.Internal", function () {
 	});
 	
 	
+	describe("#decodeUTF8()", function () {
+		it("should properly decode binary string", async function () {
+			let text = String.fromCharCode.apply(null, new Uint8Array([226, 130, 172]));
+			let utf8 = Zotero.Utilities.Internal.decodeUTF8(text);
+			assert.equal(utf8, "€");
+		});
+	});
+	
+	
+	describe("#isOnlyEmoji()", function () {
+		it("should return true for emoji", function () {
+			assert.isTrue(Zotero.Utilities.Internal.isOnlyEmoji("🐩"));
+		});
+		
+		it("should return true for emoji with text representation that use Variation Selector-16", function () {
+			assert.isTrue(Zotero.Utilities.Internal.isOnlyEmoji("⭐️"));
+		});
+		
+		it("should return true for emoji made up of multiple characters with ZWJ", function () {
+			assert.isTrue(Zotero.Utilities.Internal.isOnlyEmoji("👨‍🌾"));
+		});
+		
+		it("should return false for integer", function () {
+			assert.isFalse(Zotero.Utilities.Internal.isOnlyEmoji("0"));
+		});
+	});
+	
+	
 	describe("#delayGenerator", function () {
 		var spy;
 		
@@ -121,12 +149,10 @@ describe("Zotero.Utilities.Internal", function () {
 			assert.equal(extra, 'type: note');
 		});
 		
-		it("should extract a CSL type", function () {
-			var str = 'type: motion_picture';
+		it("should use the first mapped Zotero type for a CSL type", function () {
+			var str = 'type: personal_communication';
 			var { itemType, fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
-			assert.equal(itemType, 'videoRecording');
-			assert.equal(fields.size, 0);
-			assert.strictEqual(extra, '');
+			assert.equal(itemType, 'letter');
 		});
 		
 		it("should extract a field", function () {
@@ -177,24 +203,24 @@ describe("Zotero.Utilities.Internal", function () {
 		});
 		
 		it("should extract a field with other fields, text, and whitespace", function () {
-			var place = 'New York';
+			var date = '2020-04-01';
 			var doi = '10.1234/abcdef';
-			var str = `Line 1\nPublisher Place: ${place}\nFoo: Bar\nDOI: ${doi}\n\nLine 2`;
+			var str = `Line 1\nDate: ${date}\nFoo: Bar\nDOI: ${doi}\n\nLine 2`;
 			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
 			assert.equal(fields.size, 2);
+			assert.equal(fields.get('date'), date);
 			assert.equal(fields.get('DOI'), doi);
-			assert.equal(fields.get('place'), place);
 			assert.equal(extra, 'Line 1\nFoo: Bar\n\nLine 2');
 		});
 		
 		it("should extract the first instance of a field", function () {
-			var place1 = 'New York';
-			var place2 = 'London';
-			var str = `Publisher Place: ${place1}\nPublisher Place: ${place2}`;
+			var date1 = '2020-04-01';
+			var date2 = '2020-04-02';
+			var str = `Date: ${date1}\nDate: ${date2}`;
 			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
 			assert.equal(fields.size, 1);
-			assert.equal(fields.get('place'), place1);
-			assert.equal(extra, "Publisher Place: " + place2);
+			assert.equal(fields.get('date'), date1);
+			assert.equal(extra, "Date: " + date2);
 		});
 		
 		it("shouldn't extract a field from a line that begins with a whitespace", function () {
@@ -266,6 +292,21 @@ describe("Zotero.Utilities.Internal", function () {
 			assert.equal(fields.get('numPages'), 11);
 			assert.equal(fields.get('date'), 2014);
 			assert.strictEqual(extra, '');
+		});
+		
+		it("should ignore empty creator in citeproc-js cheater syntax", function () {
+			var str = '{:author: }\n';
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			assert.equal(fields.size, 0);
+			assert.strictEqual(extra, str);
+		});
+		
+		it("should ignore both Event Place and Publisher Place (temporary)", function () {
+			var str = "Event Place: Foo\nPublisher Place: Bar";
+			var { fields, extra } = Zotero.Utilities.Internal.extractExtraFields(str);
+			Zotero.debug([...fields.entries()]);
+			assert.equal(fields.size, 0);
+			assert.equal(extra, "Event Place: Foo\nPublisher Place: Bar");
 		});
 	});
 	
@@ -360,6 +401,15 @@ describe("Zotero.Utilities.Internal", function () {
 			assert.propertyVal(identifiers[2], "arXiv", "hep-ex/9809001");
 			assert.propertyVal(identifiers[3], "arXiv", "math.GT/0309135");
 		});
+
+		it("should extract ADS bibcodes", async function () {
+			var identifiers = ZUI.extractIdentifiers("9 2021wfc..rept....8D, 2022MSSP..16208010Y.");
+			assert.lengthOf(identifiers, 2);
+			assert.lengthOf(Object.keys(identifiers[0]), 1);
+			assert.lengthOf(Object.keys(identifiers[1]), 1);
+			assert.propertyVal(identifiers[0], "adsBibcode", "2021wfc..rept....8D");
+			assert.propertyVal(identifiers[1], "adsBibcode", "2022MSSP..16208010Y");
+		});
 	});
 	
 	describe("#resolveLocale()", function () {
@@ -444,6 +494,77 @@ describe("Zotero.Utilities.Internal", function () {
 		it("should trim given name if trim=true", function () {
 			var existing = ['Name', 'Name 1', 'Name 2', 'Name 3'];
 			assert.equal(Zotero.Utilities.Internal.getNextName('Name 2', existing, true), 'Name 4');
+		});
+	});
+
+	describe("#parseURL()", function () {
+		var f;
+		before(() => {
+			f = Zotero.Utilities.Internal.parseURL;
+		});
+
+		describe("#fileName", function () {
+			it("should contain filename", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileName', 'def.html');
+			});
+
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileName', '');
+			});
+		});
+
+		describe("#fileExtension", function () {
+			it("should contain extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileExtension', 'html');
+			});
+
+			it("should be empty if no extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def'), 'fileExtension', '');
+			});
+
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileExtension', '');
+			});
+		});
+
+		describe("#fileBaseName", function () {
+			it("should contain base name", function () {
+				assert.propertyVal(f('http://example.com/abc/def.html?foo=bar'), 'fileBaseName', 'def');
+			});
+
+			it("should equal filename if no extension", function () {
+				assert.propertyVal(f('http://example.com/abc/def'), 'fileBaseName', 'def');
+			});
+
+			it("should be empty if no filename", function () {
+				assert.propertyVal(f('http://example.com/abc/'), 'fileBaseName', '');
+			});
+		});
+	});
+
+	describe("#generateHTMLFromTemplate()", function () {
+		it("should support variables with attributes", function () {
+			var vars = {
+				v1: '1',
+				v2: (pars) => pars.a1 + pars.a2 + pars.a3,
+				v3: () => '',
+				v5: () => 'something',
+				ar1: [],
+				ar2: [1, 2]
+			};
+			var template = `{{ v1}}{{v2 a1= 1  a2 =' 2' a3 = "3 "}}{{v3}}{{v4}}{{if ar1}}ar1{{endif}}{{if ar2}}{{ar2}}{{endif}}{{if v5}}yes{{endif}}{{if v3}}no{{endif}}{{if v2}}no{{endif}}`;
+			var html = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(html, '11 23 1,2yes');
+		});
+
+		it("should support nested 'if' statements", function () {
+			var vars = {
+				v1: '1',
+				v2: 'H',
+			};
+			var template = `{{if v1 == '1'}}yes1{{if x}}no{{elseif v2  == h }}yes2{{endif}}{{elseif v2 == 2}}no{{else}}no{{endif}} {{if v2 == 1}}not{{elseif x}}not{{else}}yes3{{ endif}}`;
+			var html = Zotero.Utilities.Internal.generateHTMLFromTemplate(template, vars);
+			assert.equal(html, 'yes1yes2 yes3');
 		});
 	});
 })

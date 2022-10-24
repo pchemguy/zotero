@@ -38,7 +38,7 @@ async function getSymlinks(source, options, signatures) {
 		const dest = path.join('build', f);
 		try {
 			if (isWindows) {
-				await fs.copy(f, dest);
+				await fs.copy(f, dest, { dereference: true });
 			} else {
 				await fs.ensureSymlink(f, dest);
 			}
@@ -70,6 +70,8 @@ if (require.main === module) {
 			const source = symlinkFiles
 				.concat(dirs.map(d => `${d}/**`))
 				.concat([`!${formatDirsForMatcher(dirs)}/**/*.js`])
+				.concat([`!${formatDirsForMatcher(dirs)}/**/*.jsx`])
+				.concat([`!${formatDirsForMatcher(dirs)}/**/*.scss`])
 				.concat([`!${formatDirsForMatcher(copyDirs)}/**`]);
 
 			const signatures = await getSignatures();

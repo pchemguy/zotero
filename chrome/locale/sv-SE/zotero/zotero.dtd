@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Avmarkera allt">
 <!ENTITY zotero.general.edit "Ändra">
 <!ENTITY zotero.general.delete "Radera">
+<!ENTITY zotero.general.moveToTrash "Flytta till papperskorgen">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Avbryt">
 <!ENTITY zotero.general.refresh "Uppdatera">
@@ -49,42 +50,15 @@
 <!ENTITY zotero.tabs.attachments.label "Bilagor">
 <!ENTITY zotero.tabs.tags.label "Etiketter">
 <!ENTITY zotero.tabs.related.label "Liknande källor">
-<!ENTITY zotero.notes.separate "Redigera i ett separat fönster">
 
 <!ENTITY zotero.toolbar.duplicate.label "Visa dubletter">
 <!ENTITY zotero.collections.showUnfiledItems "Visa oregistererade källor">
 <!ENTITY zotero.collections.showRetractedItems "Visa återtagna källor">
 
 <!ENTITY zotero.items.itemType "Källtyp">
-<!ENTITY zotero.items.type_column "Källtyp">
-<!ENTITY zotero.items.title_column "Titel">
 <!ENTITY zotero.items.creator_column "Skapare">
-<!ENTITY zotero.items.date_column "Datum">
 <!ENTITY zotero.items.year_column "År">
-<!ENTITY zotero.items.publisher_column "Förlag">
-<!ENTITY zotero.items.publication_column "Tidskriftens namn">
-<!ENTITY zotero.items.journalAbbr_column "Tidskriftens förkortning">
-<!ENTITY zotero.items.language_column "Språk">
-<!ENTITY zotero.items.accessDate_column "Hämtdatum">
-<!ENTITY zotero.items.libraryCatalog_column "Bokkatalog">
-<!ENTITY zotero.items.callNumber_column "Hyllkod">
-<!ENTITY zotero.items.rights_column "Rättigheter">
-<!ENTITY zotero.items.dateAdded_column "Tillagt datum">
 <!ENTITY zotero.items.dateModified_column "Ändrat datum">
-<!ENTITY zotero.items.extra_column "Extra">
-<!ENTITY zotero.items.archive_column "Arkiv">
-<!ENTITY zotero.items.archiveLocation_column "Hitta i arkiv">
-<!ENTITY zotero.items.place_column "Plats">
-<!ENTITY zotero.items.volume_column "Volym">
-<!ENTITY zotero.items.edition_column "Upplaga">
-<!ENTITY zotero.items.pages_column "Sidor">
-<!ENTITY zotero.items.issue_column "Tidskriftsnummer">
-<!ENTITY zotero.items.series_column "Bokserie">
-<!ENTITY zotero.items.seriesTitle_column "Bokseriens titel">
-<!ENTITY zotero.items.court_column "Domstol">
-<!ENTITY zotero.items.medium_column "Media/format">
-<!ENTITY zotero.items.genre_column "Genre">
-<!ENTITY zotero.items.system_column "System">
 <!ENTITY zotero.items.moreColumns.label "Fler kolumner">
 <!ENTITY zotero.items.restoreColumnOrder.label "Återställ kolumnordning">
 
@@ -92,14 +66,13 @@
 <!ENTITY zotero.items.menu.attach.note "Lägg till anteckning">
 <!ENTITY zotero.items.menu.attach "Lägg till bilaga">
 <!ENTITY zotero.items.menu.attach.link.uri "Bifoga länk till URI...">
-<!ENTITY zotero.items.menu.attach.file "Bifoga sparad kopia av filen...">
+<!ENTITY zotero.items.menu.attach.file "Bifoga Lagrad kopia av filen...">
 <!ENTITY zotero.items.menu.attach.fileLink "Bifoga länk till fil...">
 
 <!ENTITY zotero.items.menu.restoreToLibrary "Återställ till bibliotek">
 <!ENTITY zotero.items.menu.duplicateItem "Duplicera vald post">
 <!ENTITY zotero.items.menu.mergeItems "Sammanfoga källor…">
 <!ENTITY zotero.items.menu.unrecognize "Ångra avläsning av metadata">
-<!ENTITY zotero.items.menu.reportMetadata "Rapportera felaktiga metadata">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Välj vilken version av källan som ska vara utgångspunkt:">
 <!ENTITY zotero.duplicatesMerge.fieldSelect "Välj fält att behålla från andra versioner av källan:">
@@ -120,7 +93,7 @@
 <!ENTITY zotero.toolbar.import.label "Importera...">
 <!ENTITY zotero.toolbar.importFromClipboard "Importera från urklipp">
 <!ENTITY zotero.toolbar.export.label "Exportera bibliotek...">
-<!ENTITY zotero.toolbar.rtfScan.label "RTF Scan">
+<!ENTITY zotero.toolbar.rtfScan.label "RTF skanning">
 <!ENTITY zotero.toolbar.timeline.label "Skapa tidslinje">
 <!ENTITY zotero.toolbar.preferences.label "Inställningar...">
 <!ENTITY zotero.toolbar.supportAndDocumentation "Hjälp och dokumentation">
@@ -155,6 +128,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Lagra kopia av fil...">
 <!ENTITY zotero.toolbar.attachment.weblink "Spara länk till aktuell sida">
 <!ENTITY zotero.toolbar.attachment.snapshot "Ta lokal kopia av aktuell sida">
+<!ENTITY zotero.toolbar.context.item "Källa">
+<!ENTITY zotero.toolbar.context.notes "Anteckningar">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Inga etiketter att visa">
 <!ENTITY zotero.tagSelector.loadingTags "Laddar etiketter…">
@@ -172,8 +147,11 @@
 <!ENTITY zotero.tagColorChooser.setColor "Ställ in färg">
 <!ENTITY zotero.tagColorChooser.removeColor "Ta bort färg">
 
-<!ENTITY zotero.lookup.description "Enter ISBNs, DOIs, PMIDs, or arXiv IDs to add to your library:">
+<!ENTITY zotero.lookup.description "Ange ISBN, DOI, PMID, arXiv ID, eller ADS Bibcode för att lägga till ditt bibliotek:">
 <!ENTITY zotero.lookup.button.search "Sök">
+
+<!ENTITY zotero.createParent.title "Skapa föräldra-källa">
+<!ENTITY zotero.createParent.button.manual "Manuell inmatning">
 
 <!ENTITY zotero.selectitems.title "Markera källor">
 <!ENTITY zotero.selectitems.intro.label "Välj vilka källor du vill lägga till i ditt bibliotek">
@@ -218,7 +196,7 @@
 
 <!ENTITY zotero.citation.keepSorted.label "Håll källor sorterade">
 
-<!ENTITY zotero.citation.suppressAuthor.label "Dölj författare">
+<!ENTITY zotero.citation.suppressAuthor.label "Omit Author">
 <!ENTITY zotero.citation.prefix.label "Prefix:">
 <!ENTITY zotero.citation.suffix.label "Suffix:">
 <!ENTITY zotero.citation.editorWarning.label "Varning: Om du redigerar en referens i redigeraren så kommer den inte längre uppdateras för att spegla förändringar i databasen eller referensstilen.">
@@ -322,3 +300,32 @@
 <!ENTITY zotero.attachLink.title "Bifoga länk till URI">
 <!ENTITY zotero.attachLink.label.link "Länk:">
 <!ENTITY zotero.attachLink.label.title "Titel:">
+
+<!ENTITY zotero.context.addChildNote "Lägg till anteckning för källa">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Lägg till anteckning för källa från kommentarer">
+<!ENTITY zotero.context.addStandaloneNote "Lägg till fristående anteckning">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Lägg till fristående anteckning från kommentarer">
+<!ENTITY zotero.context.editInWindow "Redigera i eget fönster">
+
+<!ENTITY zotero.pdfReader.firstPage "Första sidan">
+<!ENTITY zotero.pdfReader.lastPage "Sista sidan">
+<!ENTITY zotero.pdfReader.back "Bakåt">
+<!ENTITY zotero.pdfReader.forward "Framåt">
+<!ENTITY zotero.pdfReader.handTool "Handverktyget">
+<!ENTITY zotero.pdfReader.verticalScrolling "Lodrät rullning">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Vågrät rullning">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Överlappande rullning">
+<!ENTITY zotero.pdfReader.noSpreads "Inga uppslag">
+<!ENTITY zotero.pdfReader.oddSpreads "Udda uppslag">
+<!ENTITY zotero.pdfReader.evenSpreads "Jämna uppslag">
+<!ENTITY zotero.pdfReader.zoomIn "Zooma in">
+<!ENTITY zotero.pdfReader.zoomOut "Zooma ut">
+<!ENTITY zotero.pdfReader.zoomAuto "Anpassa storlek automatiskt">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Anpassa till sidbredd">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Zoom to Page Height">
+<!ENTITY zotero.pdfReader.splitVertically "Split Vertically">
+<!ENTITY zotero.pdfReader.splitHorizontally "Split Horizontally">
+<!ENTITY zotero.pdfReader.transferFromPDF "Import Annotations…">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Rotate Page Left">
+<!ENTITY zotero.pdfReader.rotatePageRight "Rotate Page Right">
+<!ENTITY zotero.pdfReader.rotatePage180 "Rotate Page 180°">

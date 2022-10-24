@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "Copia la cita">
 <!ENTITY copyBibliographyCmd.label "Copia la bibliografia">
+<!ENTITY copyNoteCmd.label "Copia la nota">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Canvia la direcció de la pàgina">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,7 +45,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY goMenu.label "Vés-hi">
+
+
 <!ENTITY viewMenu.label "Visualitza">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Disposició">
 <!ENTITY standardView.label "Vista estàndard">
 <!ENTITY stackedView.label "Vista apilada">

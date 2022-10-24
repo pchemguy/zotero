@@ -61,6 +61,21 @@ describe("Zotero.Collection", function() {
 			yield collection.eraseTx({ deleteItems: true });
 			assert.lengthOf(item.getCollections(), 0);
 		});
+		
+		it("should apply 'skipDeleteLog: true' to subcollections", async function () {
+			var collection1 = await createDataObject('collection');
+			var collection2 = await createDataObject('collection', { parentID: collection1.id });
+			var collection3 = await createDataObject('collection', { parentID: collection2.id });
+			
+			await collection1.eraseTx({ skipDeleteLog: true });
+			
+			var deleted = await Zotero.Sync.Data.Local.getDeleted('collection', collection1.libraryID);
+			
+			// No collections should be in the delete log
+			assert.notInclude(deleted, collection1.key);
+			assert.notInclude(deleted, collection2.key);
+			assert.notInclude(deleted, collection3.key);
+		});
 	})
 	
 	describe("#version", function () {
@@ -168,7 +183,31 @@ describe("Zotero.Collection", function() {
 			collection2.parentKey = collection3.key;
 			yield collection2.saveTx();
 			assert.isFalse(collection1.hasChildCollections());
-		})
+		});
+		
+		it("should return false if all child collections are moved to trash", async function () {
+			var collection1 = await createDataObject('collection');
+			var collection2 = await createDataObject('collection', { parentID: collection1.id });
+			var collection3 = await createDataObject('collection', { parentID: collection1.id });
+			
+			assert.isTrue(collection1.hasChildCollections());
+			collection2.deleted = true;
+			await collection2.saveTx();
+			assert.isTrue(collection1.hasChildCollections());
+			collection3.deleted = true;
+			await collection3.saveTx();
+			assert.isFalse(collection1.hasChildCollections());
+		});
+		
+		it("should return true if child collection is in trash and includeTrashed is true", async function () {
+			var collection1 = await createDataObject('collection');
+			var collection2 = await createDataObject('collection', { parentID: collection1.id });
+			
+			assert.isTrue(collection1.hasChildCollections(true));
+			collection2.deleted = true;
+			await collection2.saveTx();
+			assert.isTrue(collection1.hasChildCollections(true));
+		});
 	})
 	
 	describe("#getChildCollections()", function () {

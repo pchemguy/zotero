@@ -30,6 +30,7 @@
 <!ENTITY zotero.preferences.groups.whenCopyingInclude "Amikor könyvtárak között másol elemeket, az alábbiakat másolja:">
 <!ENTITY zotero.preferences.groups.childNotes "kapcsolódó jegyzetek">
 <!ENTITY zotero.preferences.groups.childFiles "kapcsolódó pillanatfelvételek és importált fájlok">
+<!ENTITY zotero.preferences.groups.annotations "jegyzetek">
 <!ENTITY zotero.preferences.groups.childLinks "kapcsolódó hivatkozások">
 <!ENTITY zotero.preferences.groups.tags "címkék">
 
@@ -39,7 +40,7 @@
 <!ENTITY zotero.preferences.feeds.sorting.oldest "A legrégebbi elem felül">
 <!ENTITY zotero.preferences.feeds.feedDefaults "Feed Defaults">
 
-<!ENTITY zotero.preferences.openurl.search "Linkfeloldók keresése">
+<!ENTITY zotero.preferences.openurl.choose "Choose a resolver…">
 <!ENTITY zotero.preferences.openurl.custom " Egyedi...">
 <!ENTITY zotero.preferences.openurl.server "Linkfeloldó:">
 <!ENTITY zotero.preferences.openurl.version "Verzió:">
@@ -80,7 +81,7 @@
 <!ENTITY zotero.preferences.sync.reset.restoreToServer "Az Online Könyvtár cseréje">
 <!ENTITY zotero.preferences.sync.reset.restoreToServer.desc "Az online könyvtár felülírása a helyi Zotero adatokkal">
 <!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory "A szinkronizációs előzmények törlése">
-<!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Compare all attachment files with the storage service">
+<!ENTITY zotero.preferences.sync.reset.resetFileSyncHistory.desc "Az összes csatolt fájl összehasonlítása a tárhely szerveren">
 <!ENTITY zotero.preferences.sync.reset "Visszaállítás">
 <!ENTITY zotero.preferences.sync.reset.button "Visszaállítás">
 
@@ -104,7 +105,8 @@
 <!ENTITY zotero.preferences.export.citePaperJournalArticleURL.description "Ha ez a lehetőség nincs bekapcsolva, a Zotero csak akkor jeleníti meg az URL-t folyóirat-, újság- vagy magazincikkeknél, ha nincs megadva oldalszám.">
 
 <!ENTITY zotero.preferences.quickCopy.caption "Gyorsmásolás">
-<!ENTITY zotero.preferences.quickCopy.defaultFormat "Alapértelmezett formátum:">
+<!ENTITY zotero.preferences.quickCopy.itemFormat "Elemformátum:">
+<!ENTITY zotero.preferences.quickCopy.noteFormat "Jegyzetformátum:">
 <!ENTITY zotero.preferences.quickCopy.copyAsHTML "Másolás HTML-ként">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.setings "Weboldal-specifikus beállítások:">
 <!ENTITY zotero.preferences.quickCopy.siteEditor.domainPath "Domén/Útvonal">
@@ -127,13 +129,11 @@
 <!ENTITY zotero.preferences.export.getAdditionalStyles " További stílusok telepítése...">
 
 <!ENTITY zotero.preferences.keys.saveToZotero "Mentés Zotero-ba (adress bar icon)">
-<!ENTITY zotero.preferences.keys.toggleFullscreen "Teljesképernyős üzemmód">
 <!ENTITY zotero.preferences.keys.focusLibrariesPane "Focus Libraries Pane">
 <!ENTITY zotero.preferences.keys.quicksearch "Gyorskeresés">
 <!ENTITY zotero.preferences.keys.newItem "Új elem létrehozása">
 <!ENTITY zotero.preferences.keys.newNote "Új jegyzet létrehozása">
 <!ENTITY zotero.preferences.keys.toggleAllRead "Az összes elem megjelölése olvasottként/olvasatlanként">
-<!ENTITY zotero.preferences.keys.toggleTagSelector "Címkeválasztó mutatása/elrejtése">
 <!ENTITY zotero.preferences.keys.copySelectedItemCitationsToClipboard "Kiválasztott hivatkozás másolása a vágólapra">
 <!ENTITY zotero.preferences.keys.copySelectedItemsToClipboard "Kiválasztott elemek másolása a vágólapra">
 <!ENTITY zotero.preferences.keys.importFromClipboard "Importálás a vágólapról">
@@ -147,7 +147,7 @@
 <!ENTITY zotero.preferences.proxies.desc_after_link "további információkért.">
 <!ENTITY zotero.preferences.proxies.transparent "Emlékezzen a proxyn keresztül megtekintett erőforrásokra">
 <!ENTITY zotero.preferences.proxies.autoRecognize "Proxy-források automatikus felismerése">
-<!ENTITY zotero.preferences.proxies.showRedirectNotification "Show notification when redirecting through a proxy">
+<!ENTITY zotero.preferences.proxies.showRedirectNotification "Értesítés megjelenítése proxy-n keresztüli átirányításkor">
 <!ENTITY zotero.preferences.proxies.disableByDomain "Proxy átirányítás tiltása, ha a domén nevem tartalmaz">
 <!ENTITY zotero.preferences.proxies.configured "Proxyk">
 <!ENTITY zotero.preferences.proxies.hostname "Host neve">
@@ -172,7 +172,6 @@
 <!ENTITY zotero.preferences.locate.locateEngineManager "Article Lookup Engine Manager">
 <!ENTITY zotero.preferences.locate.description "Leírás">
 <!ENTITY zotero.preferences.locate.name "Név">
-<!ENTITY zotero.preferences.locate.locateEnginedescription "A Lookup Engine extends the capability of the Locate drop down in the Info pane. By enabling Lookup Engines in the list below they will be added to the drop down and can be used to locate resources from your library on the web.">
 <!ENTITY zotero.preferences.locate.addDescription "To add a Lookup Engine that is not on the list, visit the desired search engine in your browser and select “Add” from Zotero’s Locate menu.">
 <!ENTITY zotero.preferences.locate.restoreDefaults "Visszaállítás alapértelmezettre">
 
@@ -184,7 +183,7 @@
 <!ENTITY zotero.preferences.dataDir.useProfile "Firefox profilkönyvtár">
 <!ENTITY zotero.preferences.dataDir.custom "Egyéni:">
 <!ENTITY zotero.preferences.dataDir.choose "T   History  1  allózás...">
-<!ENTITY zotero.preferences.dataDir.viaCommandLine "(specified via command line)">
+<!ENTITY zotero.preferences.dataDir.viaCommandLine "(parancssoron keresztül megadva)">
 <!ENTITY zotero.preferences.dataDir.reveal "Az adatkönyvtár mutatása">
 <!ENTITY zotero.preferences.dataDir.migrate "Áttérés az új alapértelmezett helyre…">
 

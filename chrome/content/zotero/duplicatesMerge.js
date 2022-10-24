@@ -46,7 +46,7 @@ var Zotero_Duplicates_Pane = new function () {
 				otherItems.push(item);
 			}
 			
-			if (!item.isRegularItem() || [1,14].indexOf(item.itemTypeID) != -1) {
+			if (!item.isRegularItem() || ['annotation', 'attachment', 'note'].includes(item.itemType)) {
 				var msg = Zotero.getString('pane.item.duplicates.onlyTopLevel');
 				ZoteroPane_Local.setItemPaneMessage(msg);
 				return false;
@@ -89,10 +89,7 @@ var Zotero_Duplicates_Pane = new function () {
 		if (alternatives) {
 			// Populate menulist with Date Added values from all items
 			var dateList = document.getElementById('zotero-duplicates-merge-original-date');
-			
-			while (dateList.itemCount) {
-				dateList.removeItemAt(0);
-			}
+			dateList.innerHTML = '';
 			
 			var numRows = 0;
 			for (let item of items) {
@@ -141,7 +138,7 @@ var Zotero_Duplicates_Pane = new function () {
 		}
 		
 		_masterItem = item;
-		itembox.item = item.clone(null, { includeCollections: true });
+		itembox.item = item.clone();
 	}
 	
 	
@@ -149,7 +146,12 @@ var Zotero_Duplicates_Pane = new function () {
 		var itembox = document.getElementById('zotero-duplicates-merge-item-box');
 		Zotero.CollectionTreeCache.clear();
 		// Update master item with any field alternatives from the item box
-		_masterItem.fromJSON(itembox.item.toJSON());
+		var json = _masterItem.toJSON();
+		// Exclude certain properties that are empty in the cloned object, so we don't clobber them
+		const { relations, collections, tags, ...keep } = itembox.item.toJSON();
+		Object.assign(json, keep);
+		
+		_masterItem.fromJSON(json);
 		Zotero.Items.merge(_masterItem, _otherItems);
 	});
 }

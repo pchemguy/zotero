@@ -6,6 +6,7 @@
 <!ENTITY zotero.general.deselectAll "Odznačiť všetko">
 <!ENTITY zotero.general.edit "Upraviť">
 <!ENTITY zotero.general.delete "Vymazať">
+<!ENTITY zotero.general.moveToTrash "Presunúť do koša">
 <!ENTITY zotero.general.ok "OK">
 <!ENTITY zotero.general.cancel "Zrušiť">
 <!ENTITY zotero.general.refresh "Obnoviť">
@@ -49,42 +50,15 @@
 <!ENTITY zotero.tabs.attachments.label "Prílohy">
 <!ENTITY zotero.tabs.tags.label "Značky">
 <!ENTITY zotero.tabs.related.label "Súvisiace">
-<!ENTITY zotero.notes.separate "Upraviť v samostatnom okne">
 
 <!ENTITY zotero.toolbar.duplicate.label "Zobraziť duplicity">
 <!ENTITY zotero.collections.showUnfiledItems "Zobraziť nezaradené záznam">
 <!ENTITY zotero.collections.showRetractedItems "Zobraziť odobraté exempláre">
 
 <!ENTITY zotero.items.itemType "Typ záznamu">
-<!ENTITY zotero.items.type_column "Typ záznamu">
-<!ENTITY zotero.items.title_column "Názov">
 <!ENTITY zotero.items.creator_column "Autor">
-<!ENTITY zotero.items.date_column "Dátum">
 <!ENTITY zotero.items.year_column "Rok">
-<!ENTITY zotero.items.publisher_column "Vydavateľ">
-<!ENTITY zotero.items.publication_column "Publikácia">
-<!ENTITY zotero.items.journalAbbr_column "Skratka periodika">
-<!ENTITY zotero.items.language_column "Jazyk">
-<!ENTITY zotero.items.accessDate_column "Citované">
-<!ENTITY zotero.items.libraryCatalog_column "Knižničný katalóg">
-<!ENTITY zotero.items.callNumber_column "Signatúra">
-<!ENTITY zotero.items.rights_column "Práva">
-<!ENTITY zotero.items.dateAdded_column "Pridané">
 <!ENTITY zotero.items.dateModified_column "Zmenené">
-<!ENTITY zotero.items.extra_column "Extra">
-<!ENTITY zotero.items.archive_column "Archív">
-<!ENTITY zotero.items.archiveLocation_column "Umiestnenie v archíve">
-<!ENTITY zotero.items.place_column "Miesto">
-<!ENTITY zotero.items.volume_column "Zväzok">
-<!ENTITY zotero.items.edition_column "Vydanie">
-<!ENTITY zotero.items.pages_column "Strany">
-<!ENTITY zotero.items.issue_column "Číslo">
-<!ENTITY zotero.items.series_column "Edícia">
-<!ENTITY zotero.items.seriesTitle_column "Názov edície">
-<!ENTITY zotero.items.court_column "Súd">
-<!ENTITY zotero.items.medium_column "Médium/Formát">
-<!ENTITY zotero.items.genre_column "Žáner">
-<!ENTITY zotero.items.system_column "Systém">
 <!ENTITY zotero.items.moreColumns.label "Viac stĺpcov">
 <!ENTITY zotero.items.restoreColumnOrder.label "Obnoviť usporiadanie stĺpcov">
 
@@ -99,7 +73,6 @@
 <!ENTITY zotero.items.menu.duplicateItem "Duplikovať vybraný záznam">
 <!ENTITY zotero.items.menu.mergeItems "Zlúčiť záznamy...">
 <!ENTITY zotero.items.menu.unrecognize "Vrátiť získanie metadát">
-<!ENTITY zotero.items.menu.reportMetadata "Nahlásiť nesprávne metadáta">
 
 <!ENTITY zotero.duplicatesMerge.versionSelect "Zvoľte verziu záznamu, ktorý chcete použiť ako hlavný záznam:">
 <!ENTITY zotero.duplicatesMerge.fieldSelect "Vyberte polia, ktoré chcete zachovať z ostatných verzií záznamu:">
@@ -155,6 +128,8 @@
 <!ENTITY zotero.toolbar.attachment.add "Uložiť kópiu súboru...">
 <!ENTITY zotero.toolbar.attachment.weblink "Uložiť odkaz na aktuálnu stránku">
 <!ENTITY zotero.toolbar.attachment.snapshot "Urobiť snímku z aktuálnej stránky">
+<!ENTITY zotero.toolbar.context.item "Záznam">
+<!ENTITY zotero.toolbar.context.notes "Poznámky">
 
 <!ENTITY zotero.tagSelector.noTagsToDisplay "Žiadne značky na zobrazenie">
 <!ENTITY zotero.tagSelector.loadingTags "Načítavam značky...">
@@ -172,8 +147,11 @@
 <!ENTITY zotero.tagColorChooser.setColor "Nastaviť farbu">
 <!ENTITY zotero.tagColorChooser.removeColor "Odstrániť farbu">
 
-<!ENTITY zotero.lookup.description "Pridajte nové záznamy zadaním čísel ISBN, DOI, PMID alebo arXiv:">
+<!ENTITY zotero.lookup.description "Pridajte nové záznamy zadaním čísel ISBN, DOI, PMID, arXiv alebo kódov ADS:">
 <!ENTITY zotero.lookup.button.search "Hľadať">
+
+<!ENTITY zotero.createParent.title "Vytvoriť nadradený záznam">
+<!ENTITY zotero.createParent.button.manual "Ručné zadanie">
 
 <!ENTITY zotero.selectitems.title "Označiť záznamy">
 <!ENTITY zotero.selectitems.intro.label "Označte, ktoré záznamy chcete pridať do vašej knižnice">
@@ -322,3 +300,32 @@
 <!ENTITY zotero.attachLink.title "Priložiť odkaz k URI">
 <!ENTITY zotero.attachLink.label.link "Odkaz:">
 <!ENTITY zotero.attachLink.label.title "Názov:">
+
+<!ENTITY zotero.context.addChildNote "Pridať poznámku o zázname">
+<!ENTITY zotero.context.addChildNoteFromAnnotations "Pridať poznámku o zázname z anotácií">
+<!ENTITY zotero.context.addStandaloneNote "Pridať samostatnú poznámku">
+<!ENTITY zotero.context.addStandaloneNoteFromAnnotations "Pridať samostatnú poznámku z anotácií">
+<!ENTITY zotero.context.editInWindow "Upraviť v samostatnom okne">
+
+<!ENTITY zotero.pdfReader.firstPage "Prvá strana">
+<!ENTITY zotero.pdfReader.lastPage "Posledná strana">
+<!ENTITY zotero.pdfReader.back "Späť">
+<!ENTITY zotero.pdfReader.forward "Ďalej">
+<!ENTITY zotero.pdfReader.handTool "Náradie">
+<!ENTITY zotero.pdfReader.verticalScrolling "Zvislé posúvanie">
+<!ENTITY zotero.pdfReader.horizontalScrolling "Vodorovné posúvanie">
+<!ENTITY zotero.pdfReader.wrappedScrolling "Zbalené posúvanie">
+<!ENTITY zotero.pdfReader.noSpreads "Žiadne rozpätia">
+<!ENTITY zotero.pdfReader.oddSpreads "Nepárne rozpätia">
+<!ENTITY zotero.pdfReader.evenSpreads "Párne rozpätia">
+<!ENTITY zotero.pdfReader.zoomIn "Priblížiť">
+<!ENTITY zotero.pdfReader.zoomOut "Oddialiť">
+<!ENTITY zotero.pdfReader.zoomAuto "Automaticky upraviť veľkosť">
+<!ENTITY zotero.pdfReader.zoomPageWidth "Prispôsobiť na šírku stránky">
+<!ENTITY zotero.pdfReader.zoomPageHeight "Prispôsobiť na výšku stránky">
+<!ENTITY zotero.pdfReader.splitVertically "Split Vertically">
+<!ENTITY zotero.pdfReader.splitHorizontally "Split Horizontally">
+<!ENTITY zotero.pdfReader.transferFromPDF "Importovať anotácie...">
+<!ENTITY zotero.pdfReader.rotatePageLeft "Rotate Page Left">
+<!ENTITY zotero.pdfReader.rotatePageRight "Rotate Page Right">
+<!ENTITY zotero.pdfReader.rotatePage180 "Rotate Page 180°">

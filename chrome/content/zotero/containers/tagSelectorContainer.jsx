@@ -74,6 +74,16 @@ Zotero.TagSelector = class TagSelectorContainer extends React.PureComponent {
 	focusTextbox() {
 		this.searchBoxRef.current.focus();
 	}
+
+	componentDidCatch(error, info) {
+		// Async operations might attempt to update the react components
+		// after window close in tests, which will cause unnecessary crashing.
+		if (this._uninitialized) return;
+		Zotero.debug("TagSelectorContainer: React threw an error");
+		Zotero.logError(error);
+		Zotero.debug(info);
+		Zotero.crash();
+	}
 	
 	componentDidUpdate(_prevProps, _prevState) {
 		Zotero.debug("Tag selector updated");
@@ -538,14 +548,13 @@ Zotero.TagSelector = class TagSelectorContainer extends React.PureComponent {
 				return;
 			}
 			
-			// Store the event, because drop event does not have shiftKey attribute set
-			Zotero.DragDrop.currentEvent = event;
 			elem.classList.add('dragged-over');
 			event.preventDefault();
-			event.dataTransfer.dropEffect = "copy";
+			// Don't show + cursor when removing tags
+			var remove = (Zotero.isMac && event.metaKey) || (!Zotero.isMac && event.shiftKey);
+			event.dataTransfer.dropEffect = remove ? "move" : "copy";
 		},
 		onDragExit: function (event) {
-			Zotero.DragDrop.currentEvent = null;
 			event.target.classList.remove('dragged-over');
 		},
 		onDrop: async function(event) {
@@ -564,6 +573,9 @@ Zotero.TagSelector = class TagSelectorContainer extends React.PureComponent {
 				return;
 			}
 			
+			// Remove tags on Cmd-drag/Shift-drag
+			var remove = (Zotero.isMac && event.metaKey) || (!Zotero.isMac && event.shiftKey);
+			
 			return Zotero.DB.executeTransaction(function* () {
 				ids = ids.split(',');
 				var items = Zotero.Items.get(ids);
@@ -571,9 +583,10 @@ Zotero.TagSelector = class TagSelectorContainer extends React.PureComponent {
 				
 				for (let i=0; i<items.length; i++) {
 					let item = items[i];
-					if (Zotero.DragDrop.currentEvent.shiftKey) {
+					if (remove) {
 						item.removeTag(value);
-					} else {
+					}
+					else {
 						item.addTag(value);
 					}
 					yield item.save();
@@ -759,6 +772,7 @@ Zotero.TagSelector = class TagSelectorContainer extends React.PureComponent {
 	}
 	
 	uninit() {
+		this._uninitialized = true;
 		ReactDOM.unmountComponentAtNode(this.domEl);
 		Zotero.Notifier.unregisterObserver(this._notifierID);
 		Zotero.Prefs.unregisterObserver(this._prefObserverID);

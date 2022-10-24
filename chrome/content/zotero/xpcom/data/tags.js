@@ -171,20 +171,23 @@ Zotero.Tags = new function() {
 			if (libraryID) {
 				throw new Error("tmpTable and libraryID are mutually exclusive");
 			}
-			sql += "AND itemID IN (SELECT itemID FROM " + tmpTable + ") ";
+			sql += "AND itemID IN (SELECT itemID FROM " + tmpTable;
+			// TEMP: Match parent attachments for annotation tags
+			sql += " UNION SELECT itemID FROM itemAnnotations WHERE parentItemID IN "
+				+ "(SELECT itemID FROM " + tmpTable + ")";
+			sql += ") ";
 		}
 		if (types && types.length) {
 			sql += "AND type IN (" + new Array(types.length).fill('?').join(', ') + ") ";
 			params.push(...types);
 		}
 		if (tagIDs) {
-			sql += "AND tagID IN (" + new Array(tagIDs.length).fill('?').join(', ') + ") ";
-			params.push(...tagIDs);
+			sql += "AND tagID IN (" + tagIDs.map(x => parseInt(x)).join(', ') + ") ";
 		}
 		// Not a perfect locale sort, but speeds up the sort in the tag selector later without any
 		// discernible performance cost
 		sql += "ORDER BY name COLLATE NOCASE";
-		var rows = await Zotero.DB.columnQueryAsync(sql, params);
+		var rows = await Zotero.DB.columnQueryAsync(sql, params, { noCache: !!tmpTable || !!tagIDs });
 		return rows.map((row) => {
 			var [tagID, type] = row.split(':');
 			return this.cleanData({
@@ -258,11 +261,15 @@ Zotero.Tags = new function() {
 					// This is ugly, but it's much faster than doing replaceTag() for each item
 					let sql = 'UPDATE OR REPLACE itemTags SET tagID=?, type=0 '
 						+ 'WHERE tagID=? AND itemID IN (' + placeholders + ')';
-					yield Zotero.DB.queryAsync(sql, [newTagID, oldTagID].concat(chunk));
+					yield Zotero.DB.queryAsync(
+						sql, [newTagID, oldTagID].concat(chunk), { noCache: true }
+					);
 					
 					sql = 'UPDATE items SET synced=0, clientDateModified=? '
 						+ 'WHERE itemID IN (' + placeholders + ')'
-					yield Zotero.DB.queryAsync(sql, [Zotero.DB.transactionDateTime].concat(chunk));
+					yield Zotero.DB.queryAsync(
+						sql, [Zotero.DB.transactionDateTime].concat(chunk), { noCache: true }
+					);
 					
 					yield Zotero.Items.reload(oldItemIDs, ['primaryData', 'tags'], true);
 				})
@@ -376,7 +383,7 @@ Zotero.Tags = new function() {
 					}
 					
 					sql = "DELETE FROM itemTags WHERE ROWID IN (" + rowIDs.join(", ") + ")";
-					yield Zotero.DB.queryAsync(sql);
+					yield Zotero.DB.queryAsync(sql, false, { noCache: true });
 					
 					yield this.purge(chunk);
 					
@@ -387,7 +394,9 @@ Zotero.Tags = new function() {
 						async function (chunk) {
 							var sql = 'UPDATE items SET synced=0, clientDateModified=? '
 								+ 'WHERE itemID IN (' + Array(chunk.length).fill('?').join(',') + ')';
-							await Zotero.DB.queryAsync(sql, [Zotero.DB.transactionDateTime].concat(chunk));
+							await Zotero.DB.queryAsync(
+								sql, [Zotero.DB.transactionDateTime].concat(chunk), { noCache: true }
+							);
 							
 							await Zotero.Items.reload(itemIDs, ['primaryData', 'tags'], true);
 						}
@@ -470,7 +479,10 @@ Zotero.Tags = new function() {
 					return Zotero.DB.queryAsync(
 						"INSERT OR IGNORE INTO tagDelete VALUES "
 							+ Array(chunk.length).fill('(?)').join(', '),
-						chunk
+						chunk,
+						{
+							noCache: true
+						}
 					);
 				}
 			);
@@ -580,6 +592,8 @@ Zotero.Tags = new function() {
 		}
 		
 		var tagColors = Zotero.SyncedSettings.get(libraryID, 'tagColors') || [];
+		// Normalize tags from DB, which might not have been normalized properly previously
+		tagColors.forEach(x => x.name = x.name.normalize());
 		_libraryColors[libraryID] = tagColors;
 		_libraryColorsByName[libraryID] = new Map;
 		
@@ -608,7 +622,7 @@ Zotero.Tags = new function() {
 		this.getColors(libraryID);
 		var tagColors = _libraryColors[libraryID];
 		
-		name = name.trim();
+		name = name.trim().normalize();
 		
 		// Unset
 		if (!color) {
@@ -728,29 +742,22 @@ Zotero.Tags = new function() {
 		// Color setting can exist without tag. If missing, we have to add the tag.
 		var tagID = this.getID(tagName);
 		
-		return Zotero.DB.executeTransaction(function* () {
-			// Base our action on the first item. If it has the tag,
-			// remove the tag from all items. If it doesn't, add it to all.
-			var firstItem = items[0];
-			// Remove from all items
-			if (tagID && firstItem.hasTag(tagName)) {
-				for (let i=0; i<items.length; i++) {
-					let item = items[i];
-					item.removeTag(tagName);
-					yield item.save({
-						skipDateModifiedUpdate: true
-					});
+		return Zotero.DB.executeTransaction(async function () {
+			// If all items already have the tag, remove it from all items
+			if (tagID && items.every(x => x.hasTag(tagName))) {
+				for (let item of items) {
+					if (item.removeTag(tagName)) {
+						await item.save();
+					}
 				}
 				Zotero.Prefs.set('purge.tags', true);
 			}
-			// Add to all items
+			// Otherwise add to all items
 			else {
-				for (let i=0; i<items.length; i++) {
-					let item = items[i];
-					item.addTag(tagName);
-					yield item.save({
-						skipDateModifiedUpdate: true
-					});
+				for (let item of items) {
+					if (item.addTag(tagName)) {
+						await item.save();
+					}
 				}
 			}
 		}.bind(this));
@@ -943,9 +950,11 @@ Zotero.Tags = new function() {
 	/**
 	 * Compare two API JSON tag objects
 	 */
-	this.equals = function (data1, data2) {
-		data1 = this.cleanData(data1);
-		data2 = this.cleanData(data2);
+	this.equals = function (data1, data2, options = {}) {
+		if (!options.skipClean) {
+			data1 = this.cleanData(data1);
+			data2 = this.cleanData(data2);
+		}
 		return data1.tag === data2.tag
 			&& ((!data1.type && !data2.type) || data1.type === data2.type);
 	},

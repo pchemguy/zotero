@@ -24,11 +24,10 @@
 */
 
 Components.utils.import("resource://gre/modules/Services.jsm");
-import FilePicker from 'zotero/filePicker';
+import FilePicker from 'zotero/modules/filePicker';
 
 Zotero_Preferences.Advanced = {
 	_openURLResolvers: null,
-	
 	
 	init: function () {
 		Zotero_Preferences.Keys.init();
@@ -36,6 +35,26 @@ Zotero_Preferences.Advanced = {
 		// Show Memory Info button
 		if (Zotero.Prefs.get('debug.memoryInfo')) {
 			document.getElementById('memory-info').hidden = false;
+		}
+
+		// This might not work for checkboxes if we later need to create them
+		// with html
+		var inputs = document.querySelectorAll('input[data-preference]');
+		for (let input of inputs) {
+			let preferenceName = input.dataset.preference;
+			input.addEventListener('change', function () {
+				let value = input.value;
+				Zotero.Prefs.set(preferenceName, value);
+			});
+			input.value = Zotero.Prefs.get(preferenceName);
+		}
+		
+		// Set OpenURL resolver drop-down to last-known name
+		if (Zotero.Prefs.get('openURL.resolver')) {
+			let name = Zotero.Prefs.get('openURL.name');
+			if (name) {
+				document.getElementById('openurl-primary-popup').firstChild.setAttribute('label', name);
+			}
 		}
 		
 		this.onDataDirLoad();
@@ -367,7 +386,7 @@ Zotero_Preferences.Advanced = {
 		yield Zotero.DataDirectory.choose(
 			true,
 			!newUseDataDir,
-			() => Zotero_Preferences.openURL('https://zotero.org/support/zotero_data')
+			() => Zotero_Preferences.openURL('https://www.zotero.org/support/zotero_data')
 		);
 		radiogroup.selectedIndex = this._usingDefaultDataDir() ? 0 : 1;
 	}),
@@ -409,55 +428,145 @@ Zotero_Preferences.Advanced = {
 	},
 	
 	
-	populateOpenURLResolvers: function () {
-		var openURLMenu = document.getElementById('openURLMenu');
-		
-		this._openURLResolvers = Zotero.OpenURL.discoverResolvers();
-		var i = 0;
-		for (let r of this._openURLResolvers) {
-			openURLMenu.insertItemAt(i, r.name);
-			if (r.url == Zotero.Prefs.get('openURL.resolver') && r.version == Zotero.Prefs.get('openURL.version')) {
-				openURLMenu.selectedIndex = i;
+	handleOpenURLPopupShowing: async function (event) {
+		if (event.target.id != 'openurl-primary-popup') {
+			return;
+		}
+		if (!this._openURLResolvers) {
+			let menupopup = document.getElementById('openurl-primary-popup');
+			menupopup.firstChild.setAttribute('label', Zotero.getString('general.loading'));
+			try {
+				this._openURLResolvers = await Zotero.Utilities.Internal.OpenURL.getResolvers();
 			}
-			i++;
+			catch (e) {
+				Zotero.logError(e);
+				menupopup.firstChild.setAttribute('label', "Error loading resolvers");
+				return;
+			}
 		}
-		
-		var button = document.getElementById('openURLSearchButton');
-		switch (this._openURLResolvers.length) {
-			case 0:
-				var num = 'zero';
-				break;
-			case 1:
-				var num = 'singular';
-				break;
-			default:
-				var num = 'plural';
-		}
-		
-		button.setAttribute('label', Zotero.getString('zotero.preferences.openurl.resolversFound.' + num, this._openURLResolvers.length));
+		this.updateOpenURLResolversMenu();
 	},
 	
 	
-	onOpenURLSelected: function () {
+	updateOpenURLResolversMenu: function () {
+		if (!this._openURLResolvers) {
+			Zotero.debug("Resolvers not loaded -- not updating menu");
+			return;
+		}
+		
+		var currentResolver = Zotero.Prefs.get('openURL.resolver');
+		
+		var openURLMenu = document.getElementById('openurl-menu');
+		var menupopup = openURLMenu.firstChild;
+		menupopup.innerHTML = '';
+		
+		var customMenuItem = document.createElement('menuitem');
+		customMenuItem.setAttribute('label', Zotero.getString('general.custom'));
+		customMenuItem.setAttribute('value', 'custom');
+		customMenuItem.setAttribute('type', 'checkbox');
+		menupopup.appendChild(customMenuItem);
+		
+		menupopup.appendChild(document.createElement('menuseparator'));
+		
+		var selectedName;
+		var lastContinent;
+		var lastCountry;
+		var currentContinentPopup;
+		var currentMenuPopup;
+		for (let r of this._openURLResolvers) {
+			// Create submenus for continents
+			if (r.continent != lastContinent) {
+				let menu = document.createElement('menu');
+				menu.setAttribute('label', r.continent);
+				openURLMenu.firstChild.appendChild(menu);
+				
+				currentContinentPopup = currentMenuPopup = document.createElement('menupopup');
+				menu.appendChild(currentContinentPopup);
+				lastContinent = r.continent;
+			}
+			if (r.country != lastCountry) {
+				// If there's a country, create a submenu for it
+				if (r.country) {
+					let menu = document.createElement('menu');
+					menu.setAttribute('label', r.country);
+					currentContinentPopup.appendChild(menu);
+					
+					let menupopup = document.createElement('menupopup');
+					menu.appendChild(menupopup);
+					currentMenuPopup = menupopup;
+				}
+				// Otherwise use the continent popup
+				else {
+					currentMenuPopup = currentContinentPopup;
+				}
+				lastCountry = r.country;
+			}
+			let menuitem = document.createElement('menuitem');
+			menuitem.setAttribute('label', r.name);
+			menuitem.setAttribute('value', r.url);
+			menuitem.setAttribute('type', 'checkbox');
+			currentMenuPopup.appendChild(menuitem);
+			var checked = r.url == Zotero.Prefs.get('openURL.resolver');
+			menuitem.setAttribute('checked', checked);
+			if (checked) {
+				selectedName = r.name;
+			}
+		}
+		
+		// From directory
+		if (selectedName) {
+			openURLMenu.setAttribute('label', selectedName);
+			// If we found a match, update stored name
+			Zotero.Prefs.set('openURL.name', selectedName);
+		}
+		// Custom
+		else {
+			openURLMenu.setAttribute('label', Zotero.getString('general.custom'));
+			customMenuItem.setAttribute('checked', true);
+			Zotero.Prefs.clear('openURL.name');
+		}
+	},
+	
+	
+	handleOpenURLSelected: function (event) {
+		event.stopPropagation();
+		event.preventDefault();
+		
+		if (event.target.localName != 'menuitem') {
+			Zotero.debug("Ignoring click on " + event.target.localName);
+			return;
+		}
+		
+		var openURLMenu = document.getElementById('openurl-menu');
+		
 		var openURLServerField = document.getElementById('openURLServerField');
 		var openURLVersionMenu = document.getElementById('openURLVersionMenu');
-		var openURLMenu = document.getElementById('openURLMenu');
 		
-		if(openURLMenu.value == "custom")
-		{
+		// If "Custom" selected, clear URL field
+		if (event.target.value == "custom") {
+			Zotero.Prefs.clear('openURL.name');
+			Zotero.Prefs.set('openURL.resolver', '');
+			Zotero.Prefs.clear('openURL.version');
+			openURLServerField.value = '';
 			openURLServerField.focus();
 		}
-		else
-		{
-			openURLServerField.value = this._openURLResolvers[openURLMenu.selectedIndex]['url'];
-			openURLVersionMenu.value = this._openURLResolvers[openURLMenu.selectedIndex]['version'];
-			Zotero.Prefs.set("openURL.resolver", this._openURLResolvers[openURLMenu.selectedIndex]['url']);
-			Zotero.Prefs.set("openURL.version", this._openURLResolvers[openURLMenu.selectedIndex]['version']);
+		else {
+			Zotero.Prefs.set('openURL.name', openURLServerField.value = event.target.label);
+			Zotero.Prefs.set('openURL.resolver', openURLServerField.value = event.target.value);
+			Zotero.Prefs.set('openURL.version', openURLVersionMenu.value = "1.0");
 		}
+		
+		openURLMenu.firstChild.hidePopup();
+		
+		setTimeout(() => {
+			this.updateOpenURLResolversMenu();
+		});
 	},
 	
 	onOpenURLCustomized: function () {
-		document.getElementById('openURLMenu').value = "custom";
+		setTimeout(() => {
+			this.updateOpenURLResolversMenu();
+		});
 	},
 	
 	
@@ -500,15 +609,18 @@ Zotero_Preferences.Advanced = {
 	onLocaleChange: function () {
 		var requestedLocale = Services.locale.getRequestedLocale();
 		var menu = document.getElementById('locale-menu');
+		
 		if (menu.value == 'automatic') {
 			// Changed if not already set to automatic (unless we have the automatic locale name,
 			// meaning we just switched away to the same manual locale and back to automatic)
-			var changed = requestedLocale && menu.label != this._getAutomaticLocaleMenuLabel();
+			var changed = requestedLocale
+				&& requestedLocale == Zotero.locale
+				&& menu.label != this._getAutomaticLocaleMenuLabel();
 			Services.locale.setRequestedLocales(null);
 		}
 		else {
 			// Changed if moving to a locale other than the current one
-			var changed = Zotero.locale != menu.value
+			var changed = requestedLocale != menu.value
 			Services.locale.setRequestedLocales([menu.value]);
 		}
 		
@@ -569,12 +681,27 @@ Zotero_Preferences.Attachment_Base_Directory = {
 			return false;
 		}
 		
-		return this.changePath(newPath);
+		try {
+			return await this.changePath(newPath);
+		}
+		catch (e) {
+			Zotero.logError(e);
+			Zotero.alert(null, Zotero.getString('general.error'), e.message);
+		}
 	},
 	
 	
 	changePath: Zotero.Promise.coroutine(function* (basePath) {
 		Zotero.debug(`New base directory is ${basePath}`);
+		
+		if (Zotero.File.directoryContains(Zotero.DataDirectory.dir, basePath)) {
+			throw new Error(
+				Zotero.getString(
+					'zotero.preferences.advanced.baseDirectory.withinDataDir',
+					Zotero.appName
+				)
+			);
+		}
 		
 		// Find all current attachments with relative attachment paths
 		var sql = "SELECT itemID FROM itemAttachments WHERE linkMode=? AND path LIKE ?";
@@ -693,7 +820,7 @@ Zotero_Preferences.Attachment_Base_Directory = {
 			return false;
 		}
 		
-		// Set new data directory
+		// Set new base directory
 		Zotero.debug("Setting base directory to " + basePath);
 		Zotero.Prefs.set('baseAttachmentPath', basePath);
 		Zotero.Prefs.set('saveRelativeAttachmentPath', true);

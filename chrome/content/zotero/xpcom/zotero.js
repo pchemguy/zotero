@@ -172,25 +172,6 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 		this.uiReadyDeferred = Zotero.Promise.defer();
 		this.uiReadyPromise = this.uiReadyDeferred.promise;
 		
-		// Add a function to Zotero.Promise to check whether a value is still defined, and if not
-		// to throw a specific error that's ignored by the unhandled rejection handler in
-		// bluebird.js. This allows for easily cancelling promises when they're no longer
-		// needed, for example after a binding is destroyed.
-		//
-		// Example usage:
-		//
-		// getAsync.tap(() => Zotero.Promise.check(this.mode))
-		//
-		// If the binding is destroyed while getAsync() is being resolved and this.mode no longer
-		// exists, subsequent lines won't be run, and nothing will be logged to the console.
-		this.Promise.check = function (val) {
-			if (!val && val !== 0) {
-				let e = new Error;
-				e.name = "ZoteroPromiseInterrupt";
-				throw e;
-			}
-		};
-		
 		if (options) {
 			let opts = [
 				'openPane',
@@ -228,17 +209,21 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 			var version = yield deferred.promise;
 		}
 		Zotero.version = version;
-		Zotero.isDevBuild = Zotero.version.includes('beta') || Zotero.version.includes('SOURCE');
+		Zotero.isDevBuild = Zotero.version.includes('beta')
+			|| Zotero.version.includes('dev')
+			|| Zotero.version.includes('SOURCE');
+		Zotero.isSourceBuild = Zotero.version.includes('SOURCE');
 		
 		// OS platform
 		var win = Components.classes["@mozilla.org/appshell/appShellService;1"]
 			   .getService(Components.interfaces.nsIAppShellService)
 			   .hiddenDOMWindow;
 		this.platform = win.navigator.platform;
-		this.isMac = (this.platform.substr(0, 3) == "Mac");
+		this.isMac = this.platform.substr(0, 3) == "Mac";
 		this.isWin = (this.platform.substr(0, 3) == "Win");
 		this.isLinux = (this.platform.substr(0, 5) == "Linux");
 		this.oscpu = win.navigator.oscpu;
+		this.isBigSurOrLater = this.isMac && !/Mac OS X 10.([1-9]|1[0-5])/.test(win.navigator.oscpu);
 		
 		// Browser
 		Zotero.browser = "g";
@@ -372,6 +357,12 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 		
 		// Make sure data directory isn't in Dropbox, etc.
 		yield Zotero.DataDirectory.checkForUnsafeLocation(dataDir);
+		
+		Services.obs.addObserver({
+			observe: function () {
+				Zotero.Session.save();
+			}
+		}, "quit-application-granted", false);
 		
 		// Register shutdown handler to call Zotero.shutdown()
 		var _shutdownObserver = {observe:function() { Zotero.shutdown().done() }};
@@ -683,6 +674,8 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 			yield Zotero.CharacterSets.init();
 			yield Zotero.RelationPredicates.init();
 			
+			yield Zotero.Session.init();
+			
 			Zotero.locked = false;
 			
 			// Initialize various services
@@ -718,12 +711,11 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 			yield Zotero.Groups.init();
 			yield Zotero.Relations.init();
 			yield Zotero.Retractions.init();
+			yield Zotero.Dictionaries.init();
+			Zotero.Reader.init();
 			
 			// Migrate fields from Extra that can be moved to item fields after a schema update
-			//
-			// Disabled for now
-			//
-			//yield Zotero.Schema.migrateExtraFields();
+			yield Zotero.Schema.migrateExtraFields();
 			
 			// Load all library data except for items, which are loaded when libraries are first
 			// clicked on or if otherwise necessary
@@ -753,7 +745,9 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 		catch (e) {
 			Zotero.logError(e);
 			if (!Zotero.startupError) {
-				Zotero.startupError = Zotero.getString('startupError') + "\n\n" + (e.stack || e);
+				Zotero.startupError = Zotero.getString('startupError', Zotero.appName) + "\n\n"
+					+ Zotero.getString('db.integrityCheck.reportInForums') + "\n\n"
+					+ (e.stack || e);
 			}
 			return false;
 		}
@@ -809,7 +803,9 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 			}
 			else {
 				let stack = e.stack ? Zotero.Utilities.Internal.filterStack(e.stack) : null;
-				Zotero.startupError = Zotero.getString('startupError') + "\n\n" + (stack || e);
+				Zotero.startupError = Zotero.getString('startupError', Zotero.appName) + "\n\n"
+					+ Zotero.getString('db.integrityCheck.reportInForums') + "\n\n"
+					+ (stack || e);
 			}
 			
 			Zotero.debug(e.toString(), 1);
@@ -898,7 +894,6 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 			}
 		} catch(e) {
 			Zotero.logError(e);
-			throw e;
 		}
 	});
 	
@@ -1220,6 +1215,9 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 	this.crash = function (popup) {
 		this.crashed = true;
 		
+		// Check the database after restart
+		Zotero.Schema.setIntegrityCheckRequired(true).catch(e => this.logError(e));
+		
 		var reportErrorsStr = Zotero.getString('errorReport.reportErrors');
 		var reportInstructions = Zotero.getString('errorReport.reportInstructions', reportErrorsStr);
 		
@@ -1441,6 +1439,8 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 	 * @return	void
 	 */
 	this.showZoteroPaneProgressMeter = function (msg, determinate, icon, modalOnly) {
+		const HTML_NS = "http://www.w3.org/1999/xhtml"
+		
 		// If msg is undefined, keep any existing message. If false/null/"", clear.
 		// The message is also cleared when the meters are hidden.
 		_progressMessage = msg = (msg === undefined ? _progressMessage : msg) || "";
@@ -1475,17 +1475,15 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 			let id = 'zotero-pane-progressmeter';
 			let progressMeter = doc.getElementById(id);
 			if (!progressMeter) {
-				progressMeter = doc.createElement('progressmeter');
+				progressMeter = doc.createElementNS(HTML_NS, 'progress');
 				progressMeter.id = id;
 			}
-			progressMeter.setAttribute('mode', 'undetermined');
 			if (determinate) {
-				progressMeter.mode = 'determined';
-				progressMeter.value = 0;
+				progressMeter.setAttribute('value', 0);
 				progressMeter.max = 1000;
 			}
 			else {
-				progressMeter.mode = 'undetermined';
+				progressMeter.removeAttribute('value');
 			}
 			container.appendChild(progressMeter);
 			
@@ -1515,13 +1513,13 @@ Services.scriptloader.loadSubScript("resource://zotero/polyfill.js");
 		}
 		for (let pm of _progressMeters) {
 			if (percentage !== null) {
-				if (pm.mode == 'undetermined') {
+				if (!pm.hasAttribute('value')) {
 					pm.max = 1000;
-					pm.mode = 'determined';
 				}
-				pm.value = percentage;
-			} else if(pm.mode === 'determined') {
-				pm.mode = 'undetermined';
+				pm.setAttribute('value', percentage);
+			}
+			else if (pm.hasAttribute('value')) {
+				pm.removeAttribute('value');
 			}
 		}
 		_lastPercentage = percentage;
@@ -1916,7 +1914,7 @@ Zotero.Keys = new function() {
 
 
 /**
- * Add X-Zotero-Version header to HTTP requests to zotero.org
+ * Identify client when connecting to first-party domains
  *
  * @namespace
  */
@@ -1934,13 +1932,21 @@ Zotero.VersionHeader = {
 		try {
 			let channel = subject.QueryInterface(Components.interfaces.nsIHttpChannel);
 			let domain = channel.URI.host;
-			if (domain.endsWith(ZOTERO_CONFIG.DOMAIN_NAME)) {
+			// Add X-Zotero-Version header to HTTP requests to zotero.org
+			let isPrimaryDomain = domain == ZOTERO_CONFIG.DOMAIN_NAME
+				|| domain.endsWith('.' + ZOTERO_CONFIG.DOMAIN_NAME);
+			if (isPrimaryDomain) {
 				channel.setRequestHeader("X-Zotero-Version", Zotero.version, false);
 			}
 			else {
-				let ua = channel.getRequestHeader('User-Agent');
-				ua = this.update(domain, ua);
-				channel.setRequestHeader('User-Agent', ua, false);
+				// Use "Firefox/[version]" in user agent if not a proxy check or file sync request
+				let s3RE = /(zoteroproxycheck|zoterofilestorage(test)?)\.s3\.(us-east-1\.)?amazonaws\.com/;
+				let isAppNameDomain = s3RE.test(domain);
+				if (!isAppNameDomain) {
+					let ua = channel.getRequestHeader('User-Agent');
+					ua = this.update(ua);
+					channel.setRequestHeader('User-Agent', ua, false);
+				}
 			}
 		}
 		catch (e) {
@@ -1951,12 +1957,11 @@ Zotero.VersionHeader = {
 	/**
 	 * Replace Zotero/[version] with Firefox/[version] in the default user agent
 	 *
-	 * @param {String} domain
 	 * @param {String} ua - User Agent
 	 * @param {String} [testAppName] - App name to look for (necessary in tests, which are
 	 *     currently run in Firefox)
 	 */
-	update: function (domain, ua, testAppName) {
+	update: function (ua, testAppName) {
 		var info = Services.appinfo;
 		var appName = testAppName || info.name;
 		
@@ -1979,7 +1984,6 @@ Zotero.VersionHeader = {
 Zotero.DragDrop = {
 	currentEvent: null,
 	currentOrientation: 0,
-	currentSourceNode: null,
 	
 	getDataFromDataTransfer: function (dataTransfer, firstOnly) {
 		var dt = dataTransfer;
@@ -2038,28 +2042,8 @@ Zotero.DragDrop = {
 	},
 	
 	
-	getDragSource: function (dataTransfer) {
-		if (!dataTransfer) {
-			//Zotero.debug("Drag data not available", 2);
-			return false;
-		}
-		
-		// For items, the drag source is the CollectionTreeRow of the parent window
-		// of the source tree
-		if (dataTransfer.types.contains("zotero/item")) {
-			let sourceNode = dataTransfer.mozSourceNode || this.currentSourceNode;
-			if (!sourceNode || sourceNode.tagName != 'treechildren'
-					|| sourceNode.parentElement.id != 'zotero-items-tree') {
-				return false;
-			}
-			var win = sourceNode.ownerDocument.defaultView;
-			if (win.document.documentElement.getAttribute('windowtype') == 'zotero:search') {
-				return win.ZoteroAdvancedSearch.itemsView.collectionTreeRow;
-			}
-			return win.ZoteroPane.collectionsView.selectedTreeRow;
-		}
-		
-		return false;
+	getDragSource: function () {
+		return this.currentDragSource;
 	},
 	
 	
@@ -2114,7 +2098,7 @@ Zotero.Browser = new function() {
 		hiddenBrowser.docShell.allowJavascript = options.allowJavaScript !== false
 		hiddenBrowser.docShell.allowMetaRedirects = false;
 		hiddenBrowser.docShell.allowPlugins = false;
-		Zotero.debug("Created hidden browser (" + (nBrowsers++) + ")");
+		Zotero.debug("Created hidden browser (" + (++nBrowsers) + ")");
 		return hiddenBrowser;
 	}
 	

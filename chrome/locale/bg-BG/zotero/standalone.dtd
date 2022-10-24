@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "Копирай цитата">
 <!ENTITY copyBibliographyCmd.label "Копирай библиографията">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Обърни формата на страницата">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,7 +45,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY goMenu.label "Go">
+
+
 <!ENTITY viewMenu.label "View">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Layout">
 <!ENTITY standardView.label "Standard View">
 <!ENTITY stackedView.label "Stacked View">

@@ -45,6 +45,10 @@ Zotero.Styles = new function() {
 	 * Initializes styles cache, loading metadata for styles into memory
 	 */
 	this.init = Zotero.Promise.coroutine(function* (options = {}) {
+		if (Zotero.Prefs.get('cite.useCiteprocRs')) {
+			yield Zotero.CiteprocRs.init();
+		}
+		
 		// Wait until bundled files have been updated, except when this is called by the schema update
 		// code itself
 		if (!options.fromSchemaUpdate) {
@@ -440,7 +444,7 @@ Zotero.Styles = new function() {
 			Components.utils.import("resource://gre/modules/Services.jsm");
 			var shouldInstall = Services.prompt.confirmEx(null,
 				Zotero.getString('styles.install.title'),
-				Zotero.getString('styles.validationWarning', origin),
+				Zotero.getString('styles.validationWarning', [origin, Zotero.appName]),
 				(Services.prompt.BUTTON_POS_0) * (Services.prompt.BUTTON_TITLE_OK)
 				+ (Services.prompt.BUTTON_POS_1) * (Services.prompt.BUTTON_TITLE_CANCEL)
 				+ Services.prompt.BUTTON_POS_1_DEFAULT + Services.prompt.BUTTON_DELAY_ENABLE,
@@ -648,10 +652,7 @@ Zotero.Style = function (style, path) {
 		Zotero.Styles.ns).replace(/(.+)T([^\+]+)\+?.*/, "$1 $2");
 	this.locale = Zotero.Utilities.xpathText(doc, '/csl:style/@default-locale',
 		Zotero.Styles.ns) || null;
-	this._uppercaseSubtitles = false;
-	var uppercaseSubtitlesRE = /^apa($|-)|^(academy-of-management)/;
-	var shortIDMatches = this.styleID.match(/\/?([^/]+)$/);
-	this._uppercaseSubtitles = !!shortIDMatches && uppercaseSubtitlesRE.test(shortIDMatches[1]);
+	
 	this._class = doc.documentElement.getAttribute("class");
 	this._usesAbbreviation = !!Zotero.Utilities.xpath(doc,
 		'//csl:text[(@variable="container-title" and @form="short") or (@variable="container-title-short")][1]',
@@ -685,15 +686,22 @@ Zotero.Style = function (style, path) {
 /**
  * Get a citeproc-js CSL.Engine instance
  * @param {String} locale Locale code
+ * @param {String} format Output format one of [rtf, html, text]
  * @param {Boolean} automaticJournalAbbreviations Whether to automatically abbreviate titles
  */
-Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviations) {
+Zotero.Style.prototype.getCiteProc = function(locale, format, automaticJournalAbbreviations) {
 	if(!locale) {
 		var locale = Zotero.locale;
 		if(!locale) {
 			var locale = 'en-US';
 		}
 	}
+	format = format || 'text';
+	
+	// APA and some similar styles capitalize the first word of subtitles
+	var uppercaseSubtitlesRE = /^apa($|-)|^academy-of-management($|-)|^(freshwater-science)/;
+	var shortIDMatches = this.styleID.match(/\/?([^/]+)$/);
+	var uppercaseSubtitles = !!shortIDMatches && uppercaseSubtitlesRE.test(shortIDMatches[1]);
 	
 	// determine version of parent style
 	var overrideLocale = false; // to force dependent style locale
@@ -714,7 +722,14 @@ Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviati
 			overrideLocale = true;
 			locale = this.locale;
 		}
-	} else {
+		
+		// Turn on uppercase subtitles if parent style matches
+		if (!uppercaseSubtitles) {
+			let shortIDMatches = parentStyle.styleID.match(/\/?([^/]+)$/);
+			uppercaseSubtitles = !!shortIDMatches && uppercaseSubtitlesRE.test(shortIDMatches[1]);
+		}
+	}
+	else {
 		var version = this._version;
 	}
 	
@@ -747,26 +762,78 @@ Zotero.Style.prototype.getCiteProc = function(locale, automaticJournalAbbreviati
 		var xml = this.getXML();
 	}
 	
+	xml = this._eventToEventTitle(xml);
+	
 	try {
-		var citeproc = new Zotero.CiteProc.CSL.Engine(
-			new Zotero.Cite.System({
-				automaticJournalAbbreviations,
-				uppercaseSubtitles: this._uppercaseSubtitles
-			}),
-			xml,
-			locale,
-			overrideLocale
-		);
-		
-		citeproc.opt.development_extensions.wrap_url_and_doi = true;
-		// Don't try to parse author names. We parse them in itemToCSLJSON
-		citeproc.opt.development_extensions.parse_names = false;
+		var citeproc;
+		if (Zotero.Prefs.get('cite.useCiteprocRs')) {
+			citeproc = new Zotero.CiteprocRs.Engine(
+				new Zotero.Cite.System({
+					automaticJournalAbbreviations,
+					uppercaseSubtitles: uppercaseSubtitles
+				}),
+				this,
+				xml,
+				locale,
+				format == 'text' ? 'plain' : format,
+				overrideLocale
+			);
+		}
+		else {
+			citeproc = new Zotero.CiteProc.CSL.Engine(
+				new Zotero.Cite.System({
+					automaticJournalAbbreviations,
+					uppercaseSubtitles
+				}),
+				xml,
+				locale,
+				overrideLocale
+			);
+			citeproc.setOutputFormat(format);
+			citeproc.free = () => 0;
+			citeproc.opt.development_extensions.wrap_url_and_doi = true;
+			// Don't try to parse author names. We parse them in itemToCSLJSON
+			citeproc.opt.development_extensions.parse_names = false;
+		}
 		
 		return citeproc;
 	} catch(e) {
 		Zotero.logError(e);
 		throw e;
 	}
+};
+
+/**
+ * Temporarily substitute `event-title` for `event`
+ *
+ * Until https://github.com/citation-style-language/styles/issues/6151
+ */
+Zotero.Style.prototype._eventToEventTitle = function (xml) {
+	var parser = Components.classes["@mozilla.org/xmlextras/domparser;1"]
+		.createInstance(Components.interfaces.nsIDOMParser);
+	var doc = parser.parseFromString(xml, "text/xml");
+	// Ignore styles that already include `event-title`
+	if (doc.querySelector('[variable*="event-title"]')) {
+		return xml;
+	}
+	var elems = doc.querySelectorAll('[variable*="event"]');
+	if (!elems.length) {
+		return xml;
+	}
+	var changed = false;
+	for (let elem of elems) {
+		let variable = elem.getAttribute('variable');
+		// Must be "event" or "event foo", not, say, "event-place"
+		if (!/event( |$)/.test(variable)) {
+			continue;
+		}
+		elem.setAttribute('variable', variable.replace(/event(?= |$)/, 'event-title'));
+		changed = true;
+	}
+	if (changed) {
+		xml = doc.documentElement.outerHTML;
+	}
+	return xml;
 };
 
 Zotero.Style.prototype.__defineGetter__("class",

@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "Copier la citation">
 <!ENTITY copyBibliographyCmd.label "Copier la bibliographie">
+<!ENTITY copyNoteCmd.label "Copier la note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Inverser le sens de la page">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,7 +45,11 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
+<!ENTITY goMenu.label "Aller à">
+
+
 <!ENTITY viewMenu.label "Affichage">
+<!ENTITY viewMenu.accesskey "V">
 <!ENTITY layout.label "Mise en page">
 <!ENTITY standardView.label "Affichage standard">
 <!ENTITY stackedView.label "Affichage emplié">

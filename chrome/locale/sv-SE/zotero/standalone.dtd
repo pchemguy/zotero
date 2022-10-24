@@ -24,7 +24,7 @@
 <!ENTITY closeCmd.key "W">
 <!ENTITY closeCmd.accesskey "C">
 <!ENTITY manageAttachments.label "Hantera bilagor">
-<!ENTITY convertToStored.label "Convert Linked Files to Stored Files…">
+<!ENTITY convertToStored.label "Konvertera Länkade filer till Lagrade filer…">
 <!ENTITY importCmd.label "Importera…">
 <!ENTITY importCmd.key "I">
 <!ENTITY importFromClipboardCmd.label "Importera från urklipp">
@@ -36,6 +36,7 @@
 
 <!ENTITY copyCitationCmd.label "Kopiera referens">
 <!ENTITY copyBibliographyCmd.label "Kopiera källförteckning">
+<!ENTITY copyNoteCmd.label "Copy Note">
 
 <!ENTITY bidiSwitchPageDirectionItem.label "Växla sidans läge">
 <!ENTITY bidiSwitchPageDirectionItem.accesskey "g">
@@ -44,16 +45,20 @@
 <!ENTITY bidiSwitchTextDirectionItem.commandkey "X">
 
 
-<!ENTITY viewMenu.label "View">
-<!ENTITY layout.label "Layout">
+<!ENTITY goMenu.label "Kör">
+
+
+<!ENTITY viewMenu.label "Visa">
+<!ENTITY viewMenu.accesskey "V">
+<!ENTITY layout.label "Utseende">
 <!ENTITY standardView.label "Standardvy">
 <!ENTITY stackedView.label "Staplad vy">
 <!ENTITY collectionsPane.label "Samlingspanel">
 <!ENTITY itemPane.label "Källpanel">
 <!ENTITY tagSelector.label "Etikett-väljare">
-<!ENTITY recursiveCollections.label "Show Items from Subcollections">
+<!ENTITY recursiveCollections.label "Visa källor från undersamling">
 <!ENTITY fontSize.label "Teckenstorlek">
-<!ENTITY noteFontSize.label "Note Font Size">
+<!ENTITY noteFontSize.label "Teckenstorlek för anteckning">
 
 
 <!ENTITY toolsMenu.label "Verktyg">

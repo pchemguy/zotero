@@ -446,7 +446,10 @@ Zotero.Sync.Storage.Mode.WebDAV.prototype = {
 						yield item.saveTx({ skipAll: true });
 						// skipAll doesn't mark as unsynced, so do that separately
 						yield item.updateSynced(false);
-						return new Zotero.Sync.Storage.Result;
+						return new Zotero.Sync.Storage.Result({
+							localChanges: true,
+							syncRequired: true
+						});
 					}
 				}
 				
@@ -463,9 +466,20 @@ Zotero.Sync.Storage.Mode.WebDAV.prototype = {
 				if (smtime != mtime) {
 					let shash = item.attachmentSyncedHash;
 					if (shash && metadata.md5 && shash == metadata.md5) {
-						Zotero.debug("Last synced mod time for item " + item.libraryKey
-							+ " doesn't match time on storage server but hash does -- ignoring");
-						return new Zotero.Sync.Storage.Result;
+						Zotero.debug(`Last synced mod time for item ${item.libraryKey} doesn't `
+							+ "match time on storage server but hash does -- using local file mtime");
+						
+						yield this._setStorageFileMetadata(item);
+						item.attachmentSyncedModificationTime = fmtime;
+						item.attachmentSyncState = "in_sync";
+						yield item.saveTx({ skipAll: true });
+						// skipAll doesn't mark as unsynced, so do that separately
+						yield item.updateSynced(false);
+						
+						return new Zotero.Sync.Storage.Result({
+							localChanges: true,
+							syncRequired: true
+						});
 					}
 					
 					Zotero.logError("Conflict -- last synced file mod time for item "
@@ -1423,17 +1437,19 @@ Zotero.Sync.Storage.Mode.WebDAV.prototype = {
 						break;
 				}
 				
-				// If an item file URI, get the property URI
+				// If a .zip file URL, get the .prop file URI
 				var deletePropURI = this._getPropertyURIFromItemURI(deleteURI);
-				// Only nsIURL has fileName
-				deletePropURI.QueryInterface(Ci.nsIURL);
-				
-				// If we already deleted the prop file, skip it
-				if (!deletePropURI || results.deleted.has(deletePropURI.fileName)) {
+				// Not a .zip file URL
+				if (!deletePropURI) {
 					return;
 				}
-				
+				// Only nsIURL has fileName
+				deletePropURI.QueryInterface(Ci.nsIURL);
 				fileName = deletePropURI.fileName;
+				// Already deleted
+				if (results.deleted.has(fileName)) {
+					return;
+				}
 				
 				// Delete property file
 				var req = yield Zotero.HTTP.request(
